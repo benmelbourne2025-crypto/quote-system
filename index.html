@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         [v-cloak] { display: none !important; }
-        /* 数量栏显示微调箭头 */
+        /* 数量和价格栏显示微调箭头 */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
             -webkit-appearance: inner-spin-button !important;
@@ -18,50 +18,53 @@
         @media print { 
             .no-print { display: none !important; } 
             .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
-            body { background: white; }
         }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
 <div id="app" v-cloak>
-    <nav class="bg-slate-900 text-white p-2.5 sticky top-0 z-50 no-print shadow-xl">
-        <div class="container mx-auto max-w-6xl flex justify-between items-center text-xs">
+    <nav class="bg-[#1a1f2e] text-white p-3 sticky top-0 z-50 no-print shadow-xl">
+        <div class="container mx-auto max-w-7xl flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <span class="text-lg font-bold italic mr-4">signed<span class="text-pink-500">on</span></span>
+                <span class="text-xl font-bold italic mr-6">signed<span class="text-pink-500">on</span></span>
                 
-                <button @click="exportJson" class="bg-blue-900/40 hover:bg-blue-800 px-3 py-1.5 rounded border border-blue-700/50 transition flex items-center font-bold">
-                    <i class="fas fa-save mr-2 text-blue-400"></i> Save AS (.json)
+                <button @click="exportJson" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded flex items-center text-xs font-bold transition">
+                    <i class="fas fa-file-export mr-2 text-blue-400"></i> Save AS (.json)
                 </button>
 
-                <label class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded border border-slate-600 transition flex items-center cursor-pointer font-bold">
+                <label class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded flex items-center text-xs font-bold cursor-pointer transition">
                     <i class="fas fa-folder-open mr-2 text-yellow-400"></i> Open File
                     <input type="file" class="hidden" @change="importJson" accept=".json">
                 </label>
+
+                <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/30 ml-4">
+                    <i class="fas fa-brain mr-1"></i> Auto-Learning DB Active
+                </span>
             </div>
 
-            <div class="flex items-center space-x-3">
-                <button @click="clearData" class="text-slate-400 hover:text-red-400 px-2 font-bold uppercase transition">Reset</button>
-                <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded font-black transition shadow-lg flex items-center">
-                    <i class="fas fa-print mr-2"></i> Generate PDF
+            <div class="flex items-center space-x-4">
+                <button @click="clearData" class="text-slate-400 hover:text-red-400 text-xs font-bold uppercase">Reset</button>
+                <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-black text-xs shadow-lg transition flex items-center">
+                    <i class="fas fa-print mr-2"></i> Print PDF
                 </button>
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-8 px-6 page-container">
-        <header class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                <div class="md:col-span-8">
-                    <label class="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-1">Project Name</label>
-                    <input v-model="quoteData.title" class="text-3xl font-black text-slate-800 w-full outline-none bg-transparent placeholder-slate-200" placeholder="ENTER PROJECT NAME...">
+        <header class="bg-white rounded-xl p-8 shadow-sm border border-slate-200 mb-8">
+            <div class="grid grid-cols-12 gap-8 items-end">
+                <div class="col-span-8">
+                    <label class="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-2">Project Reference</label>
+                    <input v-model="quoteData.title" class="text-4xl font-black text-slate-800 w-full outline-none bg-transparent placeholder-slate-100 uppercase" placeholder="ENTER PROJECT NAME...">
                 </div>
-                <div class="md:col-span-4 flex flex-col space-y-4 border-l border-slate-100 pl-6">
+                <div class="col-span-4 border-l border-slate-100 pl-8 space-y-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prepared For</label>
-                        <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-2 rounded border border-transparent focus:border-blue-200" placeholder="Client / Company Name">
+                        <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-2 rounded focus:ring-1 ring-blue-500" placeholder="Client Name / Company">
                     </div>
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center border-t border-slate-50 pt-2">
                         <span class="text-[10px] font-bold text-slate-400 uppercase">Date of Issue</span>
                         <span class="text-sm font-black text-slate-800">{{ currentDate }}</span>
                     </div>
@@ -69,75 +72,66 @@
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="section-block mb-8">
-            <div class="flex items-center space-x-3 mb-3 no-print">
-                <span class="bg-slate-900 text-white w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black">{{ sIndex + 1 }}</span>
-                <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent">
-            </div>
-
-            <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-                <table class="w-full text-xs">
-                    <thead class="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                        <tr>
-                            <th class="px-6 py-4 text-left">Item Description</th>
-                            <th class="px-4 py-4 text-center w-24">Qty</th>
-                            <th class="px-4 py-4 text-right w-32">Unit Price ($)</th>
-                            <th class="px-6 py-4 text-right w-36">Sub Total</th>
-                            <th class="px-4 py-4 w-10 no-print"></th>
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <th class="px-8 py-5">Item Description</th>
+                            <th class="px-4 py-5 w-24 text-center">Qty</th>
+                            <th class="px-4 py-5 w-32 text-right">Unit Price ($)</th>
+                            <th class="px-8 py-5 w-40 text-right">Sub Total</th>
+                            <th class="px-4 py-5 w-10 no-print"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50 transition-colors">
-                            <td class="px-6 py-4">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group">
+                            <td class="px-8 py-5">
                                 <input v-model="item.name" list="matList" 
                                        @input="handleRowLogic(sIndex, iIndex)"
                                        @blur="learnNewItem(item)"
-                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent placeholder-slate-300" placeholder="Search or type item...">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-1 outline-none bg-transparent" placeholder="Additional specifications...">
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent placeholder-slate-300" placeholder="Search or type new item...">
+                                <input v-model="item.details" class="block w-full text-[11px] text-slate-400 mt-1.5 outline-none bg-transparent" placeholder="Additional specifications...">
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-5">
                                 <input type="number" v-model.number="item.qty" step="1"
-                                       class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded-lg py-2 outline-none border border-transparent focus:border-blue-200">
+                                       class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded-lg py-2.5 outline-none border border-transparent focus:border-blue-200">
                             </td>
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-5">
                                 <input type="number" v-model.number="item.price" step="0.01"
                                        @blur="learnNewItem(item)"
-                                       class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded-lg py-2 outline-none border border-transparent focus:border-blue-200">
+                                       class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded-lg py-2.5 outline-none border border-transparent focus:border-blue-200">
                             </td>
-                            <td class="px-6 py-4 text-right font-black text-slate-900 text-sm">
+                            <td class="px-8 py-5 text-right font-black text-slate-900 text-sm">
                                 ${{ (item.qty * item.price).toFixed(2) }}
                             </td>
-                            <td class="px-4 py-4 text-center no-print">
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-300 hover:text-red-500 transition-colors">
-                                    <i class="fas fa-minus-circle text-lg"></i>
+                            <td class="px-4 py-5 text-center no-print">
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-500 transition-colors">
+                                    <i class="fas fa-times-circle"></i>
                                 </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="p-3 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
-                    <button @click="addItem(sIndex)" class="text-[10px] font-black text-blue-600 hover:text-blue-800 tracking-widest uppercase">
-                        <i class="fas fa-plus-circle mr-1"></i> Add Line Item
+                <div class="p-4 bg-slate-50/50 border-t border-slate-100 no-print flex justify-center">
+                    <button @click="addItem(sIndex)" class="text-[10px] font-black text-blue-600 hover:underline tracking-widest uppercase">
+                        <i class="fas fa-plus mr-1"></i> Add Line Item
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end pt-6 mb-24">
-            <div class="w-72 space-y-2">
-                <div class="px-4 space-y-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                    <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-800">${{ subTotal.toFixed(2) }}</span></div>
+        <div class="flex justify-end pt-4 mb-24">
+            <div class="w-80 space-y-3">
+                <div class="px-6 space-y-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">
+                    <div class="flex justify-between"><span>Sub Total (Excl. GST)</span><span class="text-slate-800">${{ subTotal.toFixed(2) }}</span></div>
                     <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10%)</span><span class="text-slate-800">${{ gstAmount.toFixed(2) }}</span></div>
                 </div>
-                <div class="bg-blue-600 rounded-xl p-5 text-white shadow-xl transform hover:scale-105 transition-transform">
+                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl transform hover:scale-[1.02] transition-transform">
                     <div class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Grand Total Amount</div>
-                    <div class="text-3xl font-black leading-none">${{ grandTotal.toFixed(2) }}</div>
+                    <div class="text-4xl font-black leading-none">${{ grandTotal.toFixed(2) }}</div>
                 </div>
             </div>
-        </div>
-
-        <div class="flex justify-center mb-32 no-print">
-            <button @click="addSection" class="bg-white border-2 border-dashed border-slate-200 px-12 py-4 rounded-2xl text-slate-400 text-sm font-bold hover:bg-slate-50 hover:border-blue-300 hover:text-blue-500 transition-all shadow-sm">+ Add New Page Section</button>
         </div>
 
         <datalist id="matList">
@@ -152,7 +146,7 @@
     createApp({
         setup() {
             const externalDB = ref([]);
-            const customDB = ref([]);
+            const customDB = ref([]); // 存储用户手动输入的“学习库”
             const currentDate = ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }));
             
             const quoteData = ref({
@@ -166,11 +160,11 @@
             });
 
             onMounted(async () => {
-                // 加载本地草稿
-                const savedDraft = localStorage.getItem('signedon_v9_draft');
+                // 加载草稿
+                const savedDraft = localStorage.getItem('signedon_v10_draft');
                 if (savedDraft) quoteData.value = JSON.parse(savedDraft);
                 
-                // 加载学习库
+                // 加载用户学习的数据库
                 const savedCustom = localStorage.getItem('signedon_custom_db');
                 if (savedCustom) customDB.value = JSON.parse(savedCustom);
 
@@ -178,20 +172,20 @@
                 try {
                     const res = await fetch('database.json');
                     if (res.ok) externalDB.value = await res.json();
-                } catch (e) { console.warn("database.json not found"); }
+                } catch (e) { console.warn("database.json not found, using memory only."); }
             });
 
-            // 核心逻辑：自动增行 + 匹配单价
+            // 核心修复 1：自动加行 + 匹配逻辑
             const handleRowLogic = (sIdx, iIdx) => {
                 const section = quoteData.value.sections[sIdx];
                 const item = section.items[iIdx];
                 
-                // 1. 自动加行：最后一行有内容时立即生成新行
-                if (iIdx === section.items.length - 1 && item.name.trim() !== '') {
+                // 如果当前行是最后一行，且开始输入内容，则自动加空行
+                if (iIdx === section.items.length - 1 && item.name.trim().length > 0) {
                     section.items.push({ name: '', details: '', qty: 1, price: 0 });
                 }
 
-                // 2. 匹配单价
+                // 匹配已有单价
                 const match = allItems.value.find(m => m.name === item.name);
                 if (match) {
                     item.price = match.sell || match.price;
@@ -199,53 +193,52 @@
                 }
             };
 
-            // 学习新物料功能
+            // 核心修复 2：自动学习并保存新 Item [对应您的需求]
             const learnNewItem = (item) => {
                 if (!item.name || item.price <= 0) return;
+                
+                // 查找是否已存在于自定义库
                 const idx = customDB.value.findIndex(m => m.name === item.name);
                 const newEntry = { name: item.name, sell: item.price };
-                
+
                 if (idx > -1) {
+                    // 如果价格更新了，同步更新库
                     if (customDB.value[idx].sell !== item.price) {
                         customDB.value[idx] = newEntry;
                     }
                 } else {
+                    // 如果是完全新的 Item，加入自定义库
                     customDB.value.push(newEntry);
                 }
+                
+                // 物理保存到浏览器数据库
                 localStorage.setItem('signedon_custom_db', JSON.stringify(customDB.value));
             };
 
-            // 导入 JSON 功能 [对应您的需求]
+            // 导入 JSON
             const importJson = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const imported = JSON.parse(e.target.result);
-                        quoteData.value = imported;
-                        alert("File loaded successfully!");
-                    } catch (err) {
-                        alert("Error: Invalid JSON file.");
-                    }
+                        quoteData.value = JSON.parse(e.target.result);
+                    } catch (err) { alert("Invalid File Format."); }
                 };
                 reader.readAsText(file);
-                event.target.value = ''; // 重置 input 方便下次点击
             };
 
-            // 导出 JSON 功能
+            // 导出 JSON
             const exportJson = () => {
-                const dataStr = JSON.stringify(quoteData.value, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
+                const blob = new Blob([JSON.stringify(quoteData.value, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `Quote_${quoteData.value.client || 'backup'}.json`;
+                link.download = `Quote_${quoteData.value.title || 'Draft'}.json`;
                 link.click();
-                URL.revokeObjectURL(url);
             };
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_v9_draft', JSON.stringify(val)), { deep: true });
+            watch(quoteData, (val) => localStorage.setItem('signedon_v10_draft', JSON.stringify(val)), { deep: true });
 
             const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0));
             const gstAmount = computed(() => subTotal.value * 0.1);
@@ -256,9 +249,8 @@
                 handleRowLogic, learnNewItem, importJson, exportJson,
                 addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
-                addSection: () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }),
                 printQuote: () => window.print(),
-                clearData: () => { if(confirm("Clear current data?")) { localStorage.removeItem('signedon_v9_draft'); location.reload(); } }
+                clearData: () => { if(confirm("Reset Form?")) { localStorage.removeItem('signedon_v10_draft'); location.reload(); } }
             };
         }
     }).mount('#app');
