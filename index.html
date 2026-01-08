@@ -240,23 +240,26 @@
                 sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null }] }]
             });
 
-    // --- Database (修复版) ---
-            const loadDatabase = async () => {
-                // 1. 删除 fetch，防止覆盖你的 MASTER_DATABASE
-                // 现在的 config.repoDB 已经在 setup() 里初始化为 MASTER_DATABASE 了，所以不需要再加载
+  // --- Database (修复版) ---
+const loadDatabase = async () => {
+    try {
+        // 1. 从服务器（GitHub）加载主数据库
+        // 使用相对路径 'database.json'，这样无论在本地还是 GitHub Pages 都能自适应
+        const response = await fetch('database.json');
+        if (response.ok) {
+            config.repoDB = await response.json();
+            console.log("Master DB loaded successfully");
+        } else {
+            console.error("Failed to load database.json from server");
+        }
+    } catch (err) {
+        console.warn("Could not fetch database.json, relying on local storage only.", err);
+    }
 
-                // 2. 只加载浏览器缓存 (读取你自己手动输入过的新产品)
-                const local = localStorage.getItem('so_custom_db');
-                if (local) config.localDB = JSON.parse(local);
-            };
-
-            const db = reactive({
-                combined: computed(() => {
-                    const map = new Map();
-                    config.repoDB.forEach(i => map.set(i.name, i));
-                    config.localDB.forEach(i => map.set(i.name, i));
-                    return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
-                })
+    // 2. 加载浏览器本地缓存 (你自己手动输入过的新产品)
+    const local = localStorage.getItem('so_custom_db');
+    if (local) config.localDB = JSON.parse(local);
+};
             });
 
             // --- Logic ---
