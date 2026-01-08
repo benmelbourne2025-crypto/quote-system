@@ -1,4 +1,4 @@
-const MASTER_DATABASE = [
+[
   { "name": "16 Gauge Speaker Cable - 100m", "cost": 450.00, "sell": 585.00 },
   { "name": "16 Gauge Speaker Cable White  - 100m", "cost": 395.00, "sell": 450.00 },
   { "name": "16 Gauge Speaker Cable White  - 100m (Alt)", "cost": 395.00, "sell": 513.00 },
