@@ -15,18 +15,64 @@
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         [v-cloak] { display: none !important; }
         
-        /* 交互微调 */
+        /* 屏幕交互样式 */
         .input-ghost { transition: all 0.2s; border-bottom: 2px solid transparent; }
         .input-ghost:focus { border-bottom-color: var(--brand-accent); background: #f8fafc; }
         
-        /* 打印专用优化 */
+        /* ==========================================================================
+           [关键修复] Print CSS - 不改变逻辑，只强制浏览器行为
+           ========================================================================== */
         @media print {
-            @page { size: A4; margin: 10mm; }
-            body { background: white; -webkit-print-color-adjust: exact; }
-            .no-print { display: none !important; }
-            .page-break { page-break-inside: avoid; }
-            .shadow-2xl, .shadow-xl, .shadow-lg { box-shadow: none !important; border: 1px solid #e2e8f0; }
-            input { background: transparent !important; }
+            /* 1. 全局重置：强制白底黑字，强制显示背景色 */
+            body { 
+                background: white !important; 
+                color: black !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* 2. 隐藏无关元素：导航栏、按钮、滚动条 */
+            nav, button, .no-print, ::-webkit-scrollbar { 
+                display: none !important; 
+            }
+
+            /* 3. 核心修复：强制展开高度，允许分页 */
+            html, body, #app, main {
+                height: auto !important;
+                overflow: visible !important; /* 关键：允许内容溢出分页 */
+                width: 100% !important;
+                max-width: none !important;
+                position: static !important;
+            }
+
+            /* 4. 容器去样式：打印时不需要阴影和圆角 */
+            main {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 20px !important; /* 给纸张留白 */
+            }
+
+            /* 5. 分页控制：防止表格行被切成两半 */
+            .page-break { 
+                page-break-inside: avoid; 
+                break-inside: avoid;
+                margin-bottom: 20px;
+            }
+            tr, td { 
+                page-break-inside: avoid; 
+            }
+
+            /* 6. 输入框美化：打印时去掉背景灰框，像纯文本 */
+            input, textarea {
+                background-color: transparent !important;
+                border: none !important;
+                resize: none !important;
+                padding: 0 !important;
+            }
         }
     </style>
 </head>
@@ -62,7 +108,7 @@
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl overflow-hidden print:shadow-none print:rounded-none">
+    <main class="max-w-5xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl overflow-visible print:shadow-none print:rounded-none">
         
         <header class="p-12 border-b border-slate-100 flex justify-between items-end">
             <div class="w-2/3">
@@ -208,13 +254,11 @@
                 if (local) config.localDB = JSON.parse(local);
             };
 
-            // Unified Database (Repo + Local, with Local taking priority if duplicate names)
+            // Unified Database
             const db = reactive({
                 combined: computed(() => {
                     const map = new Map();
-                    // 先加载 Repo DB
                     config.repoDB.forEach(i => map.set(i.name, i));
-                    // 再加载 Local DB (会覆盖同名)
                     config.localDB.forEach(i => map.set(i.name, i));
                     return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
                 })
@@ -223,7 +267,6 @@
             // --- Core Logic ---
             const logic = {
                 handleItemInput: (item) => {
-                    // Find match in DB
                     const match = db.combined.find(d => d.name === item.name);
                     if (match) {
                         item.price = match.sell || match.price || 0;
@@ -232,18 +275,11 @@
                 },
                 learnItem: (item) => {
                     if (!item.name || item.price <= 0) return;
-                    
-                    // Check if it already exists exactly in Repo DB to avoid redundancy
                     const inRepo = config.repoDB.find(d => d.name === item.name && d.sell === item.price);
                     if (inRepo) return;
-
-                    // Save to Local DB
                     const idx = config.localDB.findIndex(d => d.name === item.name);
-                    if (idx > -1) {
-                        config.localDB[idx].sell = item.price;
-                    } else {
-                        config.localDB.push({ name: item.name, sell: item.price, cost: 0 });
-                    }
+                    if (idx > -1) { config.localDB[idx].sell = item.price; } 
+                    else { config.localDB.push({ name: item.name, sell: item.price, cost: 0 }); }
                     localStorage.setItem('so_custom_db', JSON.stringify(config.localDB));
                 }
             };
@@ -255,14 +291,12 @@
                     if (quote.value.sections[sIdx].items.length > 1) {
                         quote.value.sections[sIdx].items.splice(iIdx, 1);
                     } else {
-                        // If last item, just clear it
                         quote.value.sections[sIdx].items[0] = { name: '', desc: '', qty: 1, price: 0 };
                     }
                 },
                 addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', desc: '', qty: 1, price: 0 }] }),
                 removeSection: (sIdx) => { if(confirm("Remove section?")) quote.value.sections.splice(sIdx, 1); },
                 
-                // Persistence
                 exportQuote: () => {
                     const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: 'application/json' });
                     const a = document.createElement('a');
@@ -276,9 +310,7 @@
                     reader.readAsText(e.target.files[0]);
                 },
                 
-                // The "Master DB" Feature
                 downloadMasterDB: () => {
-                    // Combine everything cleanly for the JSON file
                     const masterList = db.combined.map(i => ({
                         name: i.name,
                         cost: i.cost || 0,
@@ -287,9 +319,9 @@
                     const blob = new Blob([JSON.stringify(masterList, null, 2)], { type: 'application/json' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = 'database.json'; // Force this filename
+                    a.download = 'database.json'; 
                     a.click();
-                    alert("Instructions:\n1. This file contains ALL items (Repo + New).\n2. Upload this 'database.json' to your GitHub repository to update the system for everyone.");
+                    alert("Export Complete: Upload this 'database.json' to GitHub to update the team.");
                 },
 
                 reset: () => {
@@ -300,7 +332,6 @@
                 }
             };
 
-            // --- Computed Totals ---
             const totals = computed(() => {
                 let sub = 0;
                 quote.value.sections.forEach(sec => {
@@ -309,14 +340,12 @@
                 return { sub, gst: sub * 0.1, grand: sub * 1.1 };
             });
 
-            // --- Lifecycle ---
             onMounted(() => {
                 loadDatabase();
                 const saved = localStorage.getItem('so_current_quote');
                 if (saved) quote.value = JSON.parse(saved);
             });
             
-            // Auto-save draft
             watch(quote, (val) => localStorage.setItem('so_current_quote', JSON.stringify(val)), { deep: true });
 
             return { config, quote, db, logic, actions, totals };
