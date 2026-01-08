@@ -16,6 +16,23 @@
         .input-ghost:focus { background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); outline: none; }
         .internal-col input { color: #64748b; font-size: 0.85em; }
         .internal-col input:focus { color: #0f172a; }
+        
+        /* 针对 Project Title 的优化样式 */
+        .auto-resize-title {
+            /* 自动缩放字体：在 24px 到 36px 之间根据屏幕宽度调整 */
+            font-size: clamp(24px, 4vw, 36px); 
+            line-height: 1.2;
+            width: 100%;
+            resize: none;
+            overflow: hidden;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-weight: 900;
+            text-transform: uppercase;
+            display: block;
+        }
+
         @media print {
             body * { visibility: hidden; }
             #printable-area, #printable-area * { visibility: visible; }
@@ -25,6 +42,8 @@
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
             input, textarea { border: none !important; resize: none !important; padding: 0 !important; }
             table { width: 100% !important; }
+            /* 确保打印时标题高度自动 */
+            .auto-resize-title { height: auto !important; }
         }
     </style>
 </head>
@@ -59,10 +78,16 @@
     </nav>
 
     <main id="printable-area" class="max-w-6xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl p-12">
-        <header class="border-b border-slate-100 flex justify-between items-end pb-12 mb-10">
+        <header class="border-b border-slate-100 flex justify-between items-start pb-12 mb-10">
             <div class="w-2/3">
                 <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Title</label>
-                <input v-model="quote.meta.title" class="w-full text-4xl font-black text-slate-900 outline-none placeholder-slate-200 uppercase" placeholder="UNTITLED PROJECT">
+                <textarea 
+                    v-model="quote.meta.title" 
+                    class="auto-resize-title text-slate-900 placeholder-slate-200" 
+                    placeholder="UNTITLED PROJECT"
+                    rows="1"
+                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                ></textarea>
             </div>
             <div class="w-1/3 text-right space-y-2">
                 <div>
@@ -190,18 +215,16 @@
             });
 
             const logic = {
-                // 联动 1：改变 Cost 或 Margin -> 更新 Sell
                 updateFromCost: (item) => {
                     if (item.cost >= 0 && item.margin >= 0) {
                         item.sell = parseFloat((item.cost * (1 + item.margin / 100)).toFixed(2));
                     }
                 },
-                // 联动 2：改变 Sell -> 反推 Margin
                 updateFromSell: (item) => {
                     if (item.sell > 0 && item.cost > 0) {
                         item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
                     } else if (item.sell > 0 && item.cost === 0) {
-                        item.margin = 100; // 如果成本为0，利润率计为100%
+                        item.margin = 100;
                     }
                 },
                 handleItemInput: (item) => {
@@ -209,7 +232,6 @@
                     if (match) {
                         item.cost = match.cost || 0;
                         item.sell = match.sell || 0;
-                        // 匹配后自动补全 Margin
                         if (item.cost > 0) {
                             item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
                         } else {
