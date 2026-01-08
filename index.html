@@ -9,11 +9,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         [v-cloak] { display: none !important; }
+        
+        /* 针对 PDF 打印的专项优化 [对应 image_2ec3ff] */
         @media print { 
+            @page {
+                size: A4;
+                margin: 10mm; /* 缩小边距，增加显示面积 */
+            }
+            body { 
+                background: white !important; 
+                -webkit-print-color-adjust: exact;
+            }
             .no-print { display: none !important; } 
-            .page-break { page-break-before: always; }
-            body { background: white !important; }
+            .page-container { 
+                width: 100% !important; 
+                max-width: none !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            .item-row { break-inside: avoid; } /* 防止条目被横向切断 */
+            header { 
+                margin-bottom: 20px !important; 
+                padding: 15px !important;
+                border: 1px solid #eee !important;
+            }
+            table { font-size: 11px !important; } /* 打印时稍微缩小字体，确保更多内容入屏 */
         }
+        
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
@@ -44,20 +66,20 @@
         </div>
     </nav>
 
-    <div class="container mx-auto max-w-5xl py-6 px-6">
+    <div class="container mx-auto max-w-5xl py-6 px-6 page-container">
         
         <header class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div class="md:col-span-7">
                     <label class="text-[9px] font-black text-blue-500 uppercase tracking-widest block mb-0.5">Project Name</label>
                     <input v-model="quoteData.title" 
-                           class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent border-b border-slate-50 focus:border-blue-200 py-1" 
+                           class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent border-b border-transparent focus:border-blue-100 py-0.5" 
                            placeholder="Enter Project Name..." @input="saveLocal">
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Prepared For</label>
                     <input v-model="quoteData.client" 
-                           class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded focus:ring-2 ring-blue-50" 
+                           class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded focus:ring-1 ring-blue-100" 
                            placeholder="Client Name" @input="saveLocal">
                 </div>
                 <div class="md:col-span-2 text-right">
@@ -67,7 +89,7 @@
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="page-break mb-8">
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-6 item-row">
             <div class="flex items-center justify-between mb-2 no-print">
                 <div class="flex items-center space-x-2">
                     <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center font-bold text-[10px]">{{ sIndex + 1 }}</span>
@@ -89,14 +111,14 @@
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50">
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-3">
                                 <input v-model="item.name" list="matList" @change="autoFill(item)" class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Search..." @input="saveLocal">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-1 outline-none bg-transparent" placeholder="Add specs..." @input="saveLocal">
+                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Add specs..." @input="saveLocal">
                             </td>
-                            <td class="px-4 py-4"><input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded py-1.5 outline-none focus:bg-white" @input="saveLocal"></td>
-                            <td class="px-4 py-4"><input type="number" v-model.number="item.price" class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded py-1.5 outline-none focus:bg-white" @input="saveLocal"></td>
-                            <td class="px-6 py-4 text-right font-black text-slate-900">${{ (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</td>
-                            <td class="px-4 py-4 text-center no-print">
+                            <td class="px-4 py-3"><input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none focus:bg-white" @input="saveLocal"></td>
+                            <td class="px-4 py-3"><input type="number" v-model.number="item.price" class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none focus:bg-white" @input="saveLocal"></td>
+                            <td class="px-6 py-3 text-right font-black text-slate-900">${{ (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</td>
+                            <td class="px-4 py-3 text-center no-print">
                                 <button @click="removeItem(sIndex, iIndex)" class="text-red-200 hover:text-red-600 transition-colors">
                                     <i class="fas fa-minus-circle text-base"></i>
                                 </button>
@@ -104,29 +126,29 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="p-2.5 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
+                <div class="p-2 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
                     <button @click="addItem(sIndex)" class="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 px-4 py-1 transition">
-                        <i class="fas fa-plus-circle mr-1 text-xs"></i> Add Line Item
+                        <i class="fas fa-plus-circle mr-1"></i> Add Line
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="flex justify-end pt-4 mb-20">
-            <div class="w-72 space-y-2">
-                <div class="px-4 space-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <div class="w-64 space-y-1.5">
+                <div class="px-3 space-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-800">${{ subTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
-                    <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10%)</span><span class="text-slate-800">${{ gstAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
+                    <div class="flex justify-between border-b border-slate-100 pb-1.5"><span>GST (10%)</span><span class="text-slate-800">${{ gstAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
                 </div>
-                <div class="bg-blue-600 rounded-xl p-5 text-white shadow-xl shadow-blue-200">
-                    <div class="text-[9px] font-bold uppercase tracking-widest opacity-80 mb-1">Grand Total</div>
-                    <div class="text-3xl font-black leading-none">${{ grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
+                <div class="bg-blue-600 rounded-lg p-4 text-white shadow-lg">
+                    <div class="text-[9px] font-bold uppercase tracking-widest opacity-80 mb-0.5">Grand Total</div>
+                    <div class="text-2xl font-black leading-none">${{ grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                 </div>
             </div>
         </div>
 
         <div class="flex justify-center mb-32 no-print">
-            <button @click="addSection" class="bg-white border-2 border-dashed border-slate-200 px-10 py-3 rounded-xl text-slate-400 text-xs font-bold hover:bg-slate-50 transition">+ New Page Section</button>
+            <button @click="addSection" class="bg-white border-2 border-dashed border-slate-200 px-10 py-3 rounded-xl text-slate-400 text-xs font-bold hover:bg-slate-50 transition">+ New Section</button>
         </div>
 
         <datalist id="matList">
@@ -150,7 +172,7 @@
             const quoteData = ref(initialData);
 
             onMounted(async () => {
-                const saved = localStorage.getItem('signedon_v3_draft');
+                const saved = localStorage.getItem('signedon_v4_draft');
                 if (saved) { try { quoteData.value = JSON.parse(saved); } catch (e) { quoteData.value = initialData; } }
                 try {
                     const res = await fetch('database.json');
@@ -158,9 +180,8 @@
                 } catch (e) { console.warn("Database offline"); }
             });
 
-            const saveLocal = () => localStorage.setItem('signedon_v3_draft', JSON.stringify(quoteData.value));
+            const saveLocal = () => localStorage.setItem('signedon_v4_draft', JSON.stringify(quoteData.value));
 
-            // 功能：Save As 另存为文件 (对应您的需求)
             const exportJson = () => {
                 const fileName = `Quote_${quoteData.value.client || 'Project'}_${new Date().toISOString().slice(0,10)}.json`;
                 const blob = new Blob([JSON.stringify(quoteData.value, null, 2)], { type: 'application/json' });
@@ -172,7 +193,6 @@
                 URL.revokeObjectURL(url);
             };
 
-            // 功能：Open Backup 打开并更新文件
             const importJson = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -187,7 +207,7 @@
             };
 
             const clearData = () => {
-                if(confirm("Confirm: Clear and start new?")) {
+                if(confirm("Confirm: New quote?")) {
                     quoteData.value = { title: '', client: '', sections: [{ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }] };
                     saveLocal();
                 }
@@ -207,6 +227,8 @@
             const removeSection = (idx) => { quoteData.value.sections.splice(idx, 1); saveLocal(); };
             const addItem = (sIdx) => { quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }); saveLocal(); };
             const removeItem = (sIdx, iIdx) => { quoteData.value.sections[sIdx].items.splice(iIdx, 1); saveLocal(); };
+            
+            // 打印时调起原生对话框
             const printQuote = () => window.print();
 
             return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, autoFill, addSection, removeSection, addItem, removeItem, printQuote, saveLocal, clearData, exportJson, importJson };
