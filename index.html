@@ -1,210 +1,166 @@
-<template>
-  <table class="w-full border-collapse">
-    <tbody>
-      <tr
-        v-for="item in items"
-        :key="item.id"
-        class="group hover:bg-slate-50/50 transition-colors"
-      >
-        <!-- ITEM -->
-        <td class="px-8 py-6 align-top relative">
-          <div class="flex flex-col gap-2">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignedOn Quote | System 2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        [v-cloak] { display: none !important; }
+        @media print { 
+            .no-print { display: none !important; } 
+            .page-break { page-break-before: always; }
+        }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
 
-            <!-- NAME INPUT -->
-            <input
-              v-model="item.name"
-              @input="onItemInput(item)"
-              @focus="item.showDropdown = true"
-              @blur="hideDropdown(item)"
-              class="w-full font-bold text-slate-800 outline-none bg-transparent"
-              placeholder="Click to enter item or search database..."
-            />
-
-            <!-- SEARCH DROPDOWN -->
-            <div
-              v-if="item.showDropdown && item.filtered.length"
-              class="absolute z-20 mt-10 w-[480px] bg-white border rounded-xl shadow-lg overflow-hidden"
-            >
-              <div
-                v-for="db in item.filtered"
-                :key="db.name"
-                @mousedown.prevent="selectFromDatabase(item, db)"
-                class="px-4 py-2 hover:bg-slate-100 cursor-pointer"
-              >
-                <div class="font-medium text-slate-800">{{ db.name }}</div>
-                <div class="text-xs text-slate-400">
-                  Cost: ${{ db.cost.toFixed(2) }} · Sell: ${{ db.sell.toFixed(2) }}
-                </div>
-              </div>
+<div id="app" v-cloak>
+    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-50 no-print">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl font-bold tracking-tighter text-white">signed<span class="text-pink-500">on</span> Quote</span>
             </div>
-
-            <!-- LINK -->
-            <div class="no-print flex items-center bg-slate-100/50 w-fit px-2 py-1 rounded text-blue-500 text-[10px]">
-              <i class="fas fa-link mr-2"></i>
-              <input
-                v-model.trim="item.fileLink"
-                class="w-64 outline-none bg-transparent font-medium"
-                placeholder="OneDrive or Reference Link..."
-              />
-            </div>
-
-            <!-- IMAGES -->
-            <div class="flex gap-2 flex-wrap mt-2">
-              <ImageThumb
-                v-for="(img, i) in item.images"
-                :key="img"
-                :src="img"
-                @remove="item.images.splice(i, 1)"
-              />
-              <ImageUploader @upload="files => uploadImages(files, item)" />
-            </div>
-
-          </div>
-        </td>
-
-        <!-- QTY -->
-        <td class="px-2 py-6 text-center align-top">
-          <input
-            type="number"
-            min="0"
-            v-model.number.lazy="item.qty"
-            class="w-16 bg-white border py-2 rounded-xl text-center font-bold text-sm"
-          />
-        </td>
-
-        <!-- PRICE -->
-        <td class="px-2 py-6 text-right align-top">
-          <PriceInput v-model="item.price" />
-        </td>
-
-        <!-- TOTAL -->
-        <td class="px-8 py-6 text-right align-top">
-          <div class="flex items-center justify-end gap-4">
-            <span class="font-black text-lg">
-              {{ formatCurrency(item.qty * item.price) }}
-            </span>
-            <button
-              v-if="items.length > 1"
-              @click="removeItem(item.id)"
-              class="no-print w-6 h-6 rounded-full bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100"
-            >
-              <i class="fas fa-times text-[10px]"></i>
+            <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-bold transition">
+                <i class="fas fa-print mr-2"></i>Generate PDF
             </button>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</template>
+        </div>
+    </nav>
 
-<script setup>
-import { ref, defineComponent } from 'vue'
-import database from './database.json'
+    <div class="container mx-auto max-w-5xl py-10 px-6">
+        <header class="bg-white rounded-xl p-8 shadow-sm border border-slate-200 mb-8 text-center">
+            <input v-model="quoteData.title" class="text-3xl font-black text-slate-800 w-full mb-4 border-none text-center focus:ring-0" placeholder="PROJECT NAME">
+            <div class="flex justify-center space-x-4">
+                <input v-model="quoteData.client" class="bg-slate-50 px-4 py-2 rounded font-bold text-blue-600 outline-none" placeholder="Client Name">
+                <span class="py-2 text-slate-400 font-medium">Date: {{ currentDate }}</span>
+            </div>
+        </header>
 
-/* ---------------- DATA ---------------- */
-const items = ref([createItem()])
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="page-break mb-10">
+            <div class="flex items-center justify-between mb-4 no-print">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-slate-800 text-white w-7 h-7 rounded-full text-center text-sm font-bold leading-7">{{ sIndex + 1 }}</span>
+                    <input v-model="section.title" class="text-lg font-bold text-slate-700 bg-transparent outline-none">
+                </div>
+                <button v-if="quoteData.sections.length > 1" @click="deleteSection(sIndex)" class="text-slate-300 hover:text-red-500 transition"><i class="fas fa-times-circle"></i></button>
+            </div>
 
-function createItem () {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    qty: 1,
-    price: 0,
-    images: [],
-    fileLink: '',
-    showDropdown: false,
-    filtered: []
-  }
-}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr class="text-[11px] font-bold text-slate-500 uppercase">
+                            <th class="px-6 py-4 text-left">Item Description</th>
+                            <th class="px-4 py-4 text-center w-20">Qty</th>
+                            <th class="px-4 py-4 text-right w-32">Unit Price ($)</th>
+                            <th class="px-6 py-4 text-right w-32">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex">
+                            <td class="px-6 py-4">
+                                <input v-model="item.name" list="matList" @change="autoFill(item)" class="w-full font-bold text-slate-800 outline-none p-0 text-sm" placeholder="Search from database...">
+                                <input v-model="item.details" class="w-full text-xs text-slate-400 mt-1 outline-none p-0" placeholder="Details...">
+                            </td>
+                            <td class="px-4 py-4"><input type="number" v-model.number="item.qty" class="w-full text-center outline-none bg-slate-50 rounded p-1"></td>
+                            <td class="px-4 py-4"><input type="number" v-model.number="item.price" class="w-full text-right outline-none bg-slate-50 rounded p-1"></td>
+                            <td class="px-6 py-4 text-right font-bold text-slate-900">${{ (item.qty * item.price).toFixed(2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="p-3 bg-slate-50/50 border-t border-slate-100 no-print text-center">
+                    <button @click="addItem(sIndex)" class="text-xs font-bold text-blue-600 px-3 py-1 rounded hover:bg-blue-50 transition">+ ADD LINE</button>
+                </div>
+            </div>
+        </div>
 
-/* ---------------- DATABASE SEARCH ---------------- */
-const onItemInput = item => {
-  const q = item.name.toLowerCase()
+        <div class="flex justify-end border-t-2 border-slate-200 pt-8 mb-20">
+            <div class="w-80 text-right space-y-2">
+                <div class="flex justify-between text-slate-400 font-bold px-2">
+                    <span class="uppercase tracking-widest text-[10px]">Sub Total (ex GST)</span>
+                    <span class="text-slate-600">${{ subTotal.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between text-slate-400 font-bold px-2 pb-2 border-b border-slate-100">
+                    <span class="uppercase tracking-widest text-[10px]">GST (10%)</span>
+                    <span class="text-slate-600">${{ gstAmount.toFixed(2) }}</span>
+                </div>
+                <div class="pt-2 px-2">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Amount</div>
+                    <div class="text-4xl font-black text-blue-600">${{ grandTotal.toFixed(2) }}</div>
+                </div>
+            </div>
+        </div>
 
-  item.filtered = database.filter(d =>
-    d.name.toLowerCase().includes(q)
-  )
+        <datalist id="matList">
+            <option v-for="m in database" :key="m.name" :value="m.name">Database Match</option>
+        </datalist>
 
-  item.showDropdown = true
-}
-
-const selectFromDatabase = (item, db) => {
-  item.name = db.name
-  item.price = db.sell
-  item.showDropdown = false
-}
-
-const hideDropdown = item => {
-  setTimeout(() => (item.showDropdown = false), 150)
-}
-
-/* ---------------- UTILS ---------------- */
-const formatCurrency = v => `$${v.toFixed(2)}`
-
-const removeItem = id => {
-  items.value = items.value.filter(i => i.id !== id)
-}
-
-const uploadImages = (files, item) => {
-  Array.from(files).forEach(file => {
-    const reader = new FileReader()
-    reader.onload = e => item.images.push(e.target.result)
-    reader.readAsDataURL(file)
-  })
-}
-
-/* ---------------- COMPONENTS ---------------- */
-const ImageThumb = defineComponent({
-  props: { src: String },
-  emits: ['remove'],
-  template: `
-    <div class="w-16 h-16 relative rounded overflow-hidden shadow-sm">
-      <img :src="src" class="w-full h-full object-cover" />
-      <div
-        class="absolute top-1 right-1 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center cursor-pointer"
-        @click="$emit('remove')"
-      >
-        <i class="fas fa-times text-[8px]"></i>
-      </div>
+        <div class="flex justify-center mb-10 no-print">
+            <button @click="addSection" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:shadow-lg transition">
+                + Add New Section
+            </button>
+        </div>
     </div>
-  `
-})
+</div>
 
-const ImageUploader = defineComponent({
-  emits: ['upload'],
-  setup (_, { emit }) {
-    const input = ref(null)
-    return {
-      input,
-      open: () => input.value.click(),
-      change: e => emit('upload', e.target.files)
-    }
-  },
-  template: `
-    <div
-      class="w-16 h-16 flex items-center justify-center border-2 border-dashed rounded cursor-pointer text-slate-300 hover:border-blue-400"
-      @click="open"
-    >
-      <i class="fas fa-plus text-xs"></i>
-      <input ref="input" type="file" multiple class="hidden" @change="change" />
-    </div>
-  `
-})
+<script>
+    // 使用更稳健的 Vue 初始化流程
+    const { createApp, ref, computed, onMounted } = Vue;
 
-const PriceInput = defineComponent({
-  props: { modelValue: Number },
-  emits: ['update:modelValue'],
-  template: `
-    <div class="inline-flex items-center bg-white border rounded-xl px-3 py-2">
-      <span class="text-slate-300 text-[10px] mr-1">$</span>
-      <input
-        type="number"
-        step="0.01"
-        class="w-20 text-right outline-none font-bold text-sm"
-        :value="modelValue"
-        @input="$emit('update:modelValue', +$event.target.value)"
-      />
-    </div>
-  `
-})
+    const app = createApp({
+        setup() {
+            const database = ref([]);
+            const currentDate = ref(new Date().toLocaleDateString('en-AU'));
+            const quoteData = ref({
+                title: '', client: '',
+                sections: [{ id: Date.now(), title: 'Section 1', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
+            });
+
+            onMounted(async () => {
+                try {
+                    const res = await fetch('database.json');
+                    if (res.ok) database.value = await res.json();
+                } catch (e) { console.warn("database.json not found"); }
+            });
+
+            const autoFill = (item) => {
+                const found = database.value.find(m => m.name === item.name);
+                if (found) {
+                    item.price = found.sell;
+                    item.details = found.name;
+                }
+            };
+
+            // 核心财务计算逻辑
+            const subTotal = computed(() => {
+                let total = 0;
+                quoteData.value.sections.forEach(s => {
+                    s.items.forEach(i => {
+                        total += (Number(i.qty) || 0) * (Number(i.price) || 0);
+                    });
+                });
+                return total;
+            });
+
+            const gstAmount = computed(() => subTotal.value * 0.1);
+            const grandTotal = computed(() => subTotal.value * 1.1);
+
+            const addSection = () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] });
+            const deleteSection = (idx) => quoteData.value.sections.splice(idx, 1);
+            const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 });
+            const printQuote = () => window.print();
+
+            return { 
+                database, quoteData, currentDate, 
+                subTotal, gstAmount, grandTotal, 
+                autoFill, addSection, deleteSection, addItem, printQuote 
+            };
+        }
+    });
+
+    app.mount('#app');
 </script>
+</body>
+</html>
