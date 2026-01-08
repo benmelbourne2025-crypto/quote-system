@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Pro System</title>
+    <title>SignedOn | Smart Quote</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,11 +11,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         [v-cloak] { display: none !important; }
-
-        /* 修复 Qty 箭头 */
-        input[type=number]::-webkit-inner-spin-button { opacity: 1; }
-
-        /* 打印逻辑 */
         .print-only { display: none; }
         @media print {
             .no-print { display: none !important; }
@@ -24,65 +19,56 @@
             body { background: white !important; padding: 0 !important; }
             .card-box { border: 1px solid #f1f5f9 !important; box-shadow: none !important; break-inside: avoid; }
         }
-
-        /* 确保建议列表浮在最上层 */
         .suggestion-box {
-            position: absolute;
-            z-index: 9999;
-            width: 100%;
-            background: white;
-            border-radius: 0.5rem;
+            position: absolute; z-index: 9999; width: 100%; background: white;
+            border-radius: 0.5rem; border: 1px solid #e2e8f0; top: 100%;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-            top: 100%;
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 pb-32">
+<body class="bg-[#f8fafc] text-slate-800 pb-40">
 
 <div id="app" v-cloak>
     <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10">
         <div class="flex items-center space-x-6 text-[10px]">
             <span class="text-xl font-black italic tracking-tighter">signed<span class="text-blue-500">on</span></span>
-            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400">Save JSON</button>
+            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400 text-[10px]">Save JSON</button>
         </div>
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition">
-            Generate PDF
-        </button>
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg">Generate PDF</button>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-8 px-6">
-        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-8 p-8 card-box flex justify-between items-start gap-4">
-            <div class="flex-grow min-w-0">
+        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-8 card-box flex justify-between items-start">
+            <div class="flex-1 min-w-0 pr-10">
                 <label class="text-[8px] font-black text-blue-600 uppercase tracking-[0.4em] mb-1 block">Project Reference</label>
-                <textarea v-model="quoteData.title" rows="1" class="edit-only text-3xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter resize-none leading-tight" placeholder="ENTER NAME..." @input="autoResize"></textarea>
+                <textarea v-model="quoteData.title" rows="1" class="edit-only text-3xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-200 uppercase tracking-tighter resize-none" placeholder="PROJECT NAME..." @input="autoResize"></textarea>
                 <div class="print-only uppercase font-black text-3xl leading-tight">{{ quoteData.title }}</div>
             </div>
 
-            <div class="w-[160px] shrink-0">
-                <div class="mb-4">
-                    <label class="text-[7px] font-black text-slate-400 uppercase block mb-0.5 text-right">Prepared For</label>
-                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-[13px] w-full outline-none bg-transparent border-b border-transparent focus:border-blue-100" placeholder="Client Name">
-                    <div class="print-only text-right text-[13px] font-bold">{{ quoteData.client }}</div>
+            <div class="w-[150px] shrink-0 text-right space-y-3">
+                <div>
+                    <label class="text-[7px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
+                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-sm w-full outline-none bg-transparent" placeholder="Client Name">
+                    <div class="print-only text-sm font-bold">{{ quoteData.client }}</div>
                 </div>
-                <div class="space-y-1 text-[9px] border-t border-slate-50 pt-2">
-                    <div class="flex justify-between items-center text-slate-400"><span class="uppercase">Issue</span><span class="font-bold text-slate-900">{{ currentDate }}</span></div>
-                    <div class="flex justify-between items-center text-blue-500 font-bold"><span class="uppercase">Expiry</span><span>{{ expiryDate }}</span></div>
+                <div class="border-t border-slate-50 pt-2 space-y-0.5">
+                    <div class="flex justify-between items-center text-[9px]"><span class="text-slate-400 uppercase">Issue</span><span class="font-bold">{{ currentDate }}</span></div>
+                    <div class="flex justify-between items-center text-[9px] font-bold text-blue-500"><span class="uppercase">Expiry</span><span>{{ expiryDate }}</span></div>
                 </div>
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10 group">
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id">
             <div class="flex items-center justify-between mb-3 px-2">
-                <div class="flex items-center flex-grow">
-                    <div class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[8px] font-black mr-3 no-print">{{ sIndex + 1 }}</div>
+                <div class="flex items-center flex-1">
+                    <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[8px] font-black mr-3 no-print">{{ sIndex + 1 }}</span>
                     <input v-model="section.title" class="edit-only font-black text-slate-800 text-lg outline-none bg-transparent w-full" placeholder="Section Name...">
                     <div class="print-only font-black text-lg text-slate-800">{{ section.title }}</div>
                 </div>
                 <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-400 text-xs ml-4"><i class="fas fa-trash-alt"></i></button>
             </div>
 
-            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-visible card-box">
+            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-visible card-box mb-8">
                 <table class="w-full text-left table-fixed border-collapse">
                     <thead class="bg-[#1e293b] text-white text-[8px] font-black uppercase tracking-widest">
                         <tr>
@@ -93,57 +79,47 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative hover:bg-slate-50/50 transition-colors">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative group">
                             <td class="px-6 py-4 overflow-visible">
                                 <div class="relative">
-                                    <input v-model="item.name" 
-                                           @input="filterItems(sIndex, iIndex)"
-                                           @focus="item.showSuggestions = true"
-                                           @blur="hideSuggestions(item)"
-                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none bg-transparent" placeholder="Start typing...">
-                                    
+                                    <input v-model="item.name" @input="filterItems(sIndex, iIndex)" @focus="item.showSuggestions = true" @blur="hideSuggestions(item)"
+                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none bg-transparent" placeholder="Type item name...">
                                     <div v-if="item.showSuggestions && filteredDbItems.length" class="suggestion-box">
-                                        <div v-for="dbItem in filteredDbItems" 
-                                             @mousedown="selectItem(sIndex, iIndex, dbItem)"
-                                             class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">
+                                        <div v-for="dbItem in filteredDbItems" @mousedown="selectItem(sIndex, iIndex, dbItem)" class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">
                                             <div class="font-bold text-xs">{{ dbItem.name }}</div>
-                                            <div class="text-[9px] text-slate-400">{{ dbItem.details }}</div>
+                                            <div class="text-[9px] text-slate-400 italic">{{ dbItem.details }}</div>
                                         </div>
                                     </div>
                                     <div class="print-only font-bold text-[12px]">{{ item.name }}</div>
                                 </div>
-                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1 bg-transparent" placeholder="Add specs...">
+                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1 bg-transparent" placeholder="Details...">
                                 <div class="print-only text-[9px] text-slate-400 italic">{{ item.details }}</div>
                             </td>
-                            <td class="px-2 py-4">
-                                <input type="number" v-model.number="item.qty" class="w-full bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px] outline-none focus:border-blue-200 transition">
+                            <td class="px-2 py-4 text-center">
+                                <input type="number" v-model.number="item.qty" class="w-12 bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px] outline-none">
                             </td>
-                            <td class="px-2 py-4">
+                            <td class="px-2 py-4 text-right">
                                 <input type="number" v-model.number="item.price" class="edit-only w-full text-right outline-none font-semibold text-slate-600 text-[11px] bg-transparent" step="0.01">
-                                <div class="print-only text-right text-[11px] font-semibold">${{ item.price.toFixed(2) }}</div>
+                                <div class="print-only text-[11px] font-semibold">${{ item.price.toFixed(2) }}</div>
                             </td>
-                            <td class="px-6 py-4 text-right font-black text-slate-900 text-[12px] relative group-item">
+                            <td class="px-6 py-4 text-right font-black text-slate-900 text-[12px] relative">
                                 ${{ (item.qty * item.price).toFixed(2) }}
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="no-print absolute -right-4 top-1/2 -translate-y-1/2 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="no-print absolute -right-2 top-1/2 -translate-y-1/2 text-slate-200 hover:text-red-400"><i class="fas fa-times-circle"></i></button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-2 bg-slate-50/20 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 text-[8px] font-black text-blue-400 uppercase tracking-widest transition-all">
-                    + Add Line Item
-                </div>
+                <div @click="addItem(sIndex)" class="p-2 bg-slate-50/20 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 text-[8px] font-black text-blue-400 uppercase tracking-widest">+ Add Line Item</div>
             </div>
+            
+            <button @click="addSection" class="no-print w-full border-2 border-dashed border-slate-200 rounded-2xl py-3 mb-10 text-slate-400 font-black text-[9px] uppercase tracking-[0.4em] hover:bg-blue-50 hover:border-blue-400 hover:text-blue-500 transition-all">
+                + Add New Section Below
+            </button>
         </div>
 
-        <button @click="addSection" class="no-print w-full border-2 border-dashed border-slate-200 rounded-[1.5rem] py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50/30 transition-all mb-12">
-            + Add New Section
-        </button>
-
-        <div class="flex justify-end pt-4">
-            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right">
-                <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Total (inc. GST)</div>
+        <div class="flex justify-end mt-10">
+            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right transform hover:scale-105 transition">
+                <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Grand Total (inc. GST)</div>
                 <div class="text-4xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
         </div>
@@ -151,7 +127,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, watch } = Vue;
+    const { createApp, ref, computed } = Vue;
     const itemDatabase = [
         { name: "18 Gauge Speaker Cable - 100m", details: "High-performance OFC cable", price: 430.92 },
         { name: "3M - 3900 High Intensity Prismatic", details: "Reflective sheeting for signs", price: 102.00 },
@@ -181,11 +157,10 @@
                 Object.assign(item, { name: dbItem.name, details: dbItem.details, price: dbItem.price, showSuggestions: false });
             };
 
-            const addSection = () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0, showSuggestions: false }] });
-            const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false });
-            
             return { 
-                quoteData, filteredDbItems, filterItems, selectItem, addSection, addItem,
+                quoteData, filteredDbItems, filterItems, selectItem,
+                addSection: () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0, showSuggestions: false }] }),
+                addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false }),
                 removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
                 subTotal: computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0)),
