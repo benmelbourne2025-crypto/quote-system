@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignedOn | Quote System Next</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* 打印配置：实现多页面报价单的核心 */
+        @media print {
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+            body { background-color: white; }
+            .shadow-lg { box-shadow: none !important; }
+        }
+        /* 自定义滚动条和过渡动画 */
+        .section-card { transition: all 0.3s ease; }
+        .section-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div id="app">
+    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-50 no-print">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <span class="text-xl font-bold tracking-tighter">signed<span class="text-pink-500">on</span></span>
+                <span class="h-6 w-px bg-slate-700"></span>
+                <span class="text-sm text-slate-400">Microsoft 365 Connected</span>
+            </div>
+            <div class="flex space-x-3">
+                <button @click="saveToLocal" class="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-save mr-2"></i>Draft
+                </button>
+                <button @click="printQuote" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md font-bold transition shadow-lg shadow-blue-900/20">
+                    <i class="fas fa-file-pdf mr-2"></i>Generate PDF
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto max-w-5xl py-10 px-6">
+        <header class="bg-white rounded-2xl p-10 shadow-sm border border-slate-200 mb-10">
+            <div class="flex justify-between items-start mb-8">
+                <div class="w-2/3">
+                    <input v-model="quoteData.title" class="text-4xl font-black text-slate-900 w-full border-none focus:ring-0 placeholder-slate-200" placeholder="PROJECT NAME">
+                    <div class="mt-4 flex space-x-4">
+                        <input v-model="quoteData.client" class="bg-slate-50 px-3 py-1 rounded text-sm font-semibold text-blue-600" placeholder="Client Name">
+                        <input v-model="quoteData.reference" class="bg-slate-50 px-3 py-1 rounded text-sm text-slate-400" placeholder="Ref #">
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</div>
+                    <div class="text-lg font-medium">{{ currentDate }}</div>
+                </div>
+            </div>
+            <textarea v-model="quoteData.summary" class="w-full text-slate-500 border-none focus:ring-0 resize-none italic" rows="2" placeholder="Executive summary or project scope..."></textarea>
+        </header>
+
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="page-break mb-12">
+            <div class="flex items-center justify-between mb-4 no-print group">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">{{ sIndex + 1 }}</span>
+                    <input v-model="section.title" class="text-xl font-bold text-slate-800 border-none focus:ring-0" placeholder="Section Title (e.g. Signage Production)">
+                </div>
+                <button @click="deleteSection(sIndex)" class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden section-card">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <th class="px-8 py-4 text-left">Description</th>
+                            <th class="px-4 py-4 text-center w-24">Qty</th>
+                            <th class="px-4 py-4 text-right w-32">Unit Price</th>
+                            <th class="px-8 py-4 text-right w-32">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex">
+                            <td class="px-8 py-6">
+                                <input v-model="item.name" class="block w-full font-bold text-slate-700 border-none focus:ring-0 p-0 text-base" placeholder="Item Name">
+                                <input v-model="item.details" class="block w-full text-xs text-slate-400 border-none focus:ring-0 p-0 mt-1" placeholder="Specifications...">
+                            </td>
+                            <td class="px-4 py-6">
+                                <input type="number" v-model="item.qty" class="w-full text-center font-medium border-none focus:ring-0">
+                            </td>
+                            <td class="px-4 py-6">
+                                <input type="number" v-model="item.price" class="w-full text-right font-medium border-none focus:ring-0">
+                            </td>
+                            <td class="px-8 py-6 text-right font-bold text-slate-900">
+                                ${{ (item.qty * item.price).toLocaleString() }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="p-4 bg-slate-50/50 border-t border-slate-100 no-print">
+                    <button @click="addItem(sIndex)" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">
+                        <i class="fas fa-plus mr-2"></i>ADD LINE ITEM
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-20 no-print">
+            <button @click="addSection" class="bg-white border-2 border-dashed border-slate-300 px-10 py-4 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:text-blue-400 transition">
+                <i class="fas fa-layer-group mr-2"></i>Add New Page Section
+            </button>
+        </div>
+
+        <footer class="border-t-4 border-slate-900 pt-10 mb-20 flex justify-end">
+            <div class="w-72 space-y-3">
+                <div class="flex justify-between text-slate-400 font-medium">
+                    <span>Subtotal</span>
+                    <span>${{ subtotal.toLocaleString() }}</span>
+                </div>
+                <div class="flex justify-between text-slate-400 font-medium">
+                    <span>GST (10%)</span>
+                    <span>${{ (subtotal * 0.1).toLocaleString() }}</span>
+                </div>
+                <div class="flex justify-between text-3xl font-black text-slate-900 pt-3">
+                    <span>Total</span>
+                    <span class="text-blue-600">${{ (subtotal * 1.1).toLocaleString() }}</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+        setup() {
+            const currentDate = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            // 核心报价数据结构
+            const quoteData = ref({
+                title: '',
+                client: '',
+                reference: '',
+                summary: '',
+                sections: [
+                    { id: Date.now(), title: 'Signage Production', items: [{ name: '', details: '', qty: 1, price: 0 }] }
+                ]
+            });
+
+            // 计算总价
+            const subtotal = computed(() => {
+                return quoteData.value.sections.reduce((total, section) => {
+                    return total + section.items.reduce((sTotal, item) => sTotal + (item.qty * item.price), 0);
+                }, 0);
+            });
+
+            // 交互方法
+            const addSection = () => {
+                quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] });
+            };
+            const deleteSection = (index) => quoteData.value.sections.splice(index, 1);
+            const addItem = (sIndex) => quoteData.value.sections[sIndex].items.push({ name: '', details: '', qty: 1, price: 0 });
+            const printQuote = () => window.print();
+            const saveToLocal = () => {
+                localStorage.setItem('quote_draft', JSON.stringify(quoteData.value));
+                alert('Draft saved to browser!');
+            };
+
+            return { quoteData, currentDate, subtotal, addSection, deleteSection, addItem, printQuote, saveToLocal };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
