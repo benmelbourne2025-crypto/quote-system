@@ -12,7 +12,7 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
 
-        /* 恢复并固定 Qty 箭头 */
+        /* Qty 箭头始终可见 */
         input[type="number"].qty-input::-webkit-inner-spin-button,
         input[type="number"].qty-input::-webkit-outer-spin-button {
             opacity: 1 !important;
@@ -21,20 +21,26 @@
             display: block;
         }
 
-        /* 确保输入框填满单元格，方便点击 */
-        .cell-input {
-            width: 100%;
-            height: 100%;
-            padding: 12px 0;
-            outline: none;
-            background: transparent;
-        }
-
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; }
-            .qty-input::-webkit-inner-spin-button { display: none !important; }
-            input { border: none !important; background: transparent !important; }
+            body { background: white !important; padding: 0 !important; }
+            
+            /* 关键修复：确保 Section 标题在打印时显示 */
+            .section-title-input {
+                border: none !important;
+                background: transparent !important;
+                color: #1e293b !important; /* 强制黑色 */
+                font-weight: 900 !important;
+                display: block !important;
+                opacity: 1 !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            /* 隐藏 Qty 箭头（打印时不需要） */
+            input[type="number"]::-webkit-inner-spin-button { display: none !important; }
+            
+            /* 保持卡片阴影和边框效果 */
+            .card-box { border: 1px solid #e2e8f0 !important; box-shadow: none !important; border-radius: 1.5rem !important; }
         }
     </style>
 </head>
@@ -50,12 +56,12 @@
             </label>
         </div>
         <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg transition">
-            Print PDF
+            Generate PDF
         </button>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-12 px-6">
-        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10">
+        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10 card-box">
             <div class="flex justify-between items-start">
                 <div class="w-1/2">
                     <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-2 block">Project Reference</label>
@@ -75,12 +81,14 @@
         </header>
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10">
-            <div class="flex items-center space-x-3 mb-4 px-2 no-print">
-                <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{{ sIndex + 1 }}</div>
-                <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400">
+            <div class="flex items-center space-x-3 mb-4 px-2">
+                <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black no-print">{{ sIndex + 1 }}</div>
+                <input v-model="section.title" 
+                       class="section-title-input font-black text-slate-800 text-xl outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400 w-full max-w-lg transition-all" 
+                       placeholder="Section Name...">
             </div>
 
-            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden">
+            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden card-box">
                 <table class="w-full text-left table-fixed border-collapse">
                     <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
                         <tr>
@@ -114,7 +122,7 @@
                                 ${{ (item.qty * item.price).toFixed(2) }}
                             </td>
                             <td class="px-2 py-4 text-center no-print">
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400 transition-colors">
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400">
                                     <i class="fas fa-times-circle"></i>
                                 </button>
                             </td>
@@ -122,7 +130,7 @@
                     </tbody>
                 </table>
                 <div @click="addItem(sIndex)" class="p-4 bg-slate-50/30 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 transition-all text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                    + Add Line Manually
+                    + Add Line Item
                 </div>
             </div>
         </div>
@@ -156,16 +164,13 @@
             });
 
             onMounted(() => {
-                const saved = localStorage.getItem('signedon_v27_stable');
+                const saved = localStorage.getItem('signedon_vFinal_Fix');
                 if (saved) quoteData.value = JSON.parse(saved);
             });
 
-            // 核心逻辑：当在最后一行输入内容时，自动创建新行
             const handleRowLogic = (sIdx, iIdx) => {
                 const section = quoteData.value.sections[sIdx];
-                const currentItem = section.items[iIdx];
-                // 如果当前输入的是该 Section 的最后一行，且内容不为空，则增加新行
-                if (iIdx === section.items.length - 1 && currentItem.name.trim() !== '') {
+                if (iIdx === section.items.length - 1 && section.items[iIdx].name.trim() !== '') {
                     section.items.push({ name: '', details: '', qty: 1, price: 0 });
                 }
             };
@@ -174,7 +179,7 @@
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_v27_stable', JSON.stringify(val)), { deep: true });
+            watch(quoteData, (val) => localStorage.setItem('signedon_vFinal_Fix', JSON.stringify(val)), { deep: true });
 
             return { 
                 quoteData, currentDate: ref(formatDate(today)), expiryDate: ref(formatDate(expiry)), 
