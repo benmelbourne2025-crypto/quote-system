@@ -15,7 +15,6 @@
             body { background: white !important; }
         }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .quote-header-input:focus { border-bottom: 2px solid #3b82f6 !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans">
@@ -25,16 +24,17 @@
         <div class="container mx-auto max-w-5xl flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <span class="text-xl font-bold tracking-tighter italic">signed<span class="text-pink-500">on</span></span>
-                <span v-if="saveStatus" class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded uppercase animate-pulse">
-                    <i class="fas fa-check-circle mr-1"></i>Auto-Saved
+                <span v-if="saveStatus" class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded uppercase tracking-widest font-bold">
+                    <i class="fas fa-sync-alt fa-spin mr-1"></i> Saved
                 </span>
             </div>
-            <div class="flex space-x-2">
-                <button @click="clearData" class="bg-slate-700 hover:bg-red-600 px-4 py-2 rounded-lg font-bold text-xs transition-all">
-                    Reset Form
+            
+            <div class="flex items-center space-x-3">
+                <button @click="clearData" class="bg-slate-700 hover:bg-red-600 px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center">
+                    <i class="fas fa-redo-alt mr-2"></i> Reset Form
                 </button>
                 <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-lg active:scale-95">
-                    <i class="fas fa-file-pdf mr-2"></i>Generate PDF
+                    <i class="fas fa-file-pdf mr-2"></i> Generate PDF
                 </button>
             </div>
         </div>
@@ -50,80 +50,75 @@
                     <label class="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] block mb-3">Project Reference</label>
                     <input v-model="quoteData.title" 
                            class="text-5xl font-black text-slate-900 w-full outline-none bg-transparent border-b-2 border-transparent hover:border-slate-100 transition-all py-2 leading-none" 
-                           placeholder="PROJECT NAME..." @input="handleInput">
+                           placeholder="ENTER PROJECT NAME..." @input="handleInput">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10 pt-8 border-t border-slate-100">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Prepared For</label>
-                            <input v-model="quoteData.client" 
-                                   class="text-xl font-bold text-slate-700 w-full outline-none bg-slate-50 border-l-4 border-slate-200 px-4 py-2 rounded-r-lg focus:border-blue-500 transition-all" 
-                                   placeholder="Client / Company Name" @input="handleInput">
-                        </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Prepared For</label>
+                        <input v-model="quoteData.client" 
+                               class="text-lg font-bold text-slate-700 w-full outline-none bg-slate-50 border-l-4 border-slate-200 px-4 py-2 rounded-r-lg focus:border-blue-500 transition-all" 
+                               placeholder="Client Name or Company" @input="handleInput">
                     </div>
-                    <div class="flex flex-col justify-end items-end space-y-1">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date of Issue</span>
+                    <div class="text-right flex flex-col justify-end">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date of Issue</label>
                         <span class="text-xl font-black text-slate-800">{{ currentDate }}</span>
-                        <div class="text-[10px] text-slate-300 mt-2 italic font-medium tracking-tight">System Status: Microsoft 365 Connected</div>
                     </div>
                 </div>
             </div>
         </header>
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="page-break mb-12">
-            <div class="flex items-center justify-between mb-6 no-print group">
+            <div class="flex items-center justify-between mb-6 no-print">
                 <div class="flex items-center space-x-4">
-                    <div class="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg rotate-3">
+                    <div class="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg rotate-3 italic">
                         {{ sIndex + 1 }}
                     </div>
                     <input v-model="section.title" 
-                           class="text-2xl font-black text-slate-800 outline-none bg-transparent border-b-2 border-transparent focus:border-blue-200" 
-                           @input="handleInput">
+                           class="text-2xl font-black text-slate-800 outline-none bg-transparent" 
+                           placeholder="Section Title" @input="handleInput">
                 </div>
-                <button v-if="quoteData.sections.length > 1" @click="deleteSection(sIndex)" class="text-slate-300 hover:text-red-500 transition-colors">
+                <button v-if="quoteData.sections.length > 1" @click="deleteSection(sIndex)" class="text-slate-300 hover:text-red-500 transition-colors p-2">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
 
             <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden">
-                <table class="w-full">
-                    <thead class="bg-slate-50/80 border-b border-slate-100">
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                            <th class="px-8 py-6 text-left">Description</th>
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <th class="px-8 py-6 text-left">Item Description</th>
                             <th class="px-4 py-6 text-center w-24">Qty</th>
-                            <th class="px-4 py-6 text-right w-32">Unit ($)</th>
-                            <th class="px-8 py-6 text-right w-36">Sub Total</th>
+                            <th class="px-4 py-6 text-right w-32">Price ($)</th>
+                            <th class="px-8 py-6 text-right w-36">Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="hover:bg-slate-50/50 transition-colors">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50">
                             <td class="px-8 py-6">
                                 <input v-model="item.name" list="matList" @change="autoFill(item)" 
-                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent text-base" 
-                                       placeholder="Search Database..." @input="handleInput">
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" 
+                                       placeholder="Search..." @input="handleInput">
                                 <input v-model="item.details" class="block w-full text-[11px] text-slate-400 mt-1 outline-none bg-transparent" 
-                                       placeholder="Item Details..." @input="handleInput">
+                                       placeholder="Additional details..." @input="handleInput">
                             </td>
                             <td class="px-4 py-6">
                                 <input type="number" v-model.number="item.qty" 
-                                       class="w-full text-center font-bold text-slate-600 bg-slate-100 rounded-lg py-1.5 outline-none focus:bg-white focus:ring-2 ring-blue-100 transition-all" 
-                                       @input="handleInput">
+                                       class="w-full text-center font-bold text-slate-600 bg-slate-100/50 rounded-lg py-1.5 outline-none focus:bg-white transition-all" @input="handleInput">
                             </td>
                             <td class="px-4 py-6">
                                 <input type="number" v-model.number="item.price" 
-                                       class="w-full text-right font-bold text-slate-600 bg-slate-100 rounded-lg py-1.5 outline-none focus:bg-white focus:ring-2 ring-blue-100 transition-all" 
-                                       @input="handleInput">
+                                       class="w-full text-right font-bold text-slate-600 bg-slate-100/50 rounded-lg py-1.5 outline-none focus:bg-white transition-all" @input="handleInput">
                             </td>
-                            <td class="px-8 py-6 text-right font-black text-slate-900">
+                            <td class="px-8 py-6 text-right font-black text-slate-900 uppercase">
                                 ${{ (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2}) }}
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="p-5 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
-                    <button @click="addItem(sIndex)" class="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-50 px-6 py-2 rounded-full transition-all">
-                        <i class="fas fa-plus-circle mr-2"></i>Add Line Item
+                <div class="p-4 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
+                    <button @click="addItem(sIndex)" class="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-colors">
+                        <i class="fas fa-plus-circle mr-2"></i> Add Line Item
                     </button>
                 </div>
             </div>
@@ -132,17 +127,17 @@
         <div class="flex justify-end pt-10 mb-24">
             <div class="w-80 space-y-4">
                 <div class="px-4 space-y-3">
-                    <div class="flex justify-between text-xs font-bold text-slate-400">
-                        <span class="uppercase tracking-widest">Sub Total (ex GST)</span>
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        <span>Sub Total (ex GST)</span>
                         <span class="text-slate-800 font-black">${{ subTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
                     </div>
-                    <div class="flex justify-between text-xs font-bold text-slate-400">
-                        <span class="uppercase tracking-widest">GST (10%)</span>
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3">
+                        <span>GST (10%)</span>
                         <span class="text-slate-800 font-black">${{ gstAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span>
                     </div>
                 </div>
-                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200 transform translate-x-2">
-                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-1 text-white/90">Grand Total Amount</div>
+                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200">
+                    <div class="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1">Grand Total Amount</div>
                     <div class="text-4xl font-black leading-none">${{ grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</div>
                 </div>
             </div>
@@ -150,7 +145,7 @@
 
         <div class="flex justify-center mb-32 no-print">
             <button @click="addSection" class="bg-white border-2 border-dashed border-slate-300 px-12 py-5 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:text-blue-400 transition-all flex items-center group">
-                <i class="fas fa-layer-group mr-3 text-lg group-hover:scale-110 transition-transform"></i>Add New Page Section
+                <i class="fas fa-layer-group mr-3 text-lg"></i> Add New Page Section
             </button>
         </div>
 
@@ -162,7 +157,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
         setup() {
@@ -170,43 +165,47 @@
             const saveStatus = ref(false);
             const currentDate = ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }));
             
-            // 默认初始数据
-            const defaultData = {
+            const initialData = {
                 title: '', client: '',
                 sections: [{ id: Date.now(), title: 'Signage Production', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
             };
 
-            const quoteData = ref(defaultData);
+            const quoteData = ref(initialData);
 
-            // 从本地加载已保存的数据
+            // 加载逻辑
             onMounted(async () => {
-                const saved = localStorage.getItem('signedOn_quote_data');
-                if (saved) {
-                    try {
-                        quoteData.value = JSON.parse(saved);
-                    } catch (e) { quoteData.value = defaultData; }
-                }
-
+                // 1. 加载本地数据库
                 try {
                     const res = await fetch('database.json');
                     if (res.ok) database.value = await res.json();
-                } catch (e) { console.warn("Database offline"); }
+                } catch (e) { console.warn("Database sync error"); }
+
+                // 2. 加载 LocalStorage 历史记录
+                const saved = localStorage.getItem('signedon_storage_v1');
+                if (saved) {
+                    try {
+                        quoteData.value = JSON.parse(saved);
+                    } catch (e) { quoteData.value = initialData; }
+                }
             });
 
-            // 监听数据变化并实时保存
+            // 核心功能：手动保存触发器
             const handleInput = () => {
-                localStorage.setItem('signedOn_quote_data', JSON.stringify(quoteData.value));
+                localStorage.setItem('signedon_storage_v1', JSON.stringify(quoteData.value));
                 saveStatus.value = true;
-                setTimeout(() => saveStatus.value = false, 2000);
+                setTimeout(() => saveStatus.value = false, 1500); // 1.5秒后隐藏保存状态
             };
 
+            // 核心功能：重置报价单
             const clearData = () => {
-                if(confirm("Are you sure you want to clear this entire quote?")) {
+                if(confirm("Confirm: Clear all current fields and start a new quote?")) {
                     quoteData.value = {
                         title: '', client: '',
-                        sections: [{ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
+                        sections: [{ id: Date.now(), title: 'Signage Production', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
                     };
-                    handleInput();
+                    localStorage.removeItem('signedon_storage_v1');
+                    saveStatus.value = true;
+                    setTimeout(() => saveStatus.value = false, 1000);
                 }
             };
 
@@ -228,25 +227,12 @@
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
 
-            const addSection = () => {
-                quoteData.value.sections.push({ id: Date.now(), title: 'Additional Works', items: [{ name: '', details: '', qty: 1, price: 0 }] });
-                handleInput();
-            };
-            const deleteSection = (idx) => {
-                quoteData.value.sections.splice(idx, 1);
-                handleInput();
-            };
-            const addItem = (sIdx) => {
-                quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 });
-                handleInput();
-            };
+            const addSection = () => { quoteData.value.sections.push({ id: Date.now(), title: 'Additional Work', items: [{ name: '', details: '', qty: 1, price: 0 }] }); handleInput(); };
+            const deleteSection = (idx) => { quoteData.value.sections.splice(idx, 1); handleInput(); };
+            const addItem = (sIdx) => { quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }); handleInput(); };
             const printQuote = () => window.print();
 
-            return { 
-                database, quoteData, currentDate, saveStatus,
-                subTotal, gstAmount, grandTotal, 
-                autoFill, addSection, deleteSection, addItem, printQuote, handleInput, clearData
-            };
+            return { database, quoteData, currentDate, saveStatus, subTotal, gstAmount, grandTotal, autoFill, addSection, deleteSection, addItem, printQuote, handleInput, clearData };
         }
     }).mount('#app');
 </script>
