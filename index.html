@@ -23,32 +23,46 @@
         .internal-col input:focus { color: #0f172a; }
 
         /* ==========================================================================
-           【核弹级】打印修复 (NUCLEAR PRINT FIX)
+           【核弹级】打印修复 (NUCLEAR PRINT FIX - OPTIMIZED LAYOUT)
            ========================================================================== */
         @media print {
-            /* 1. 隐藏页面上的每一个元素 */
+            /* 1. 隐藏所有元素 */
             body * { visibility: hidden; }
 
-            /* 2. 只让【打印区域】及其子元素可见 */
+            /* 2. 只显示打印区域 */
             #printable-area, #printable-area * { visibility: visible; }
 
-            /* 3. 强制重置位置，无视屏幕滚动条，直接定位到纸张左上角 */
+            /* 3. 【关键优化】定位与边距控制 */
             #printable-area {
-                position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
-                background: white; box-shadow: none !important; border: none !important;
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                margin: 0; 
+                
+                /* [修复点] 这里增加了内边距，解决左侧靠边不规则的问题 */
+                padding: 15mm 20mm !important; 
+                box-sizing: border-box !important;
+
+                background: white; 
+                box-shadow: none !important; 
+                border: none !important;
             }
 
-            /* 4. 强制隐藏不需要打印的特定类 */
+            /* 4. 隐藏无关元素 */
             .no-print, .internal-col, nav, button { display: none !important; }
 
-            /* 5. 确保浏览器打印背景色 */
+            /* 5. 颜色与背景 */
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             
-            /* 6. 分页控制 */
+            /* 6. 分页与排版 */
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
             
-            /* 7. 输入框变纯文本 */
+            /* 7. 输入框纯文本化 */
             input, textarea { border: none !important; resize: none !important; padding: 0 !important; }
+            
+            /* 8. 强制修正表格宽度 */
+            table { width: 100% !important; }
         }
     </style>
 </head>
@@ -130,7 +144,7 @@
                                 <textarea v-model="item.desc" rows="1" 
                                     class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden placeholder-slate-200" 
                                     placeholder="Details..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                                </td>
+                            </td>
 
                             <td class="py-3 align-top internal-col bg-yellow-50/30">
                                 <input type="number" v-model.number="item.cost" class="w-full text-right font-medium text-slate-500 bg-transparent outline-none" placeholder="0">
