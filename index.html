@@ -3,126 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Enterprise Quote System</title>
+    <title>SignedOn | Quote Master</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --brand-dark: #0f172a; --brand-accent: #2563eb; }
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        :root { --brand-dark: #0f172a; --brand-blue: #2563eb; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
         [v-cloak] { display: none !important; }
+
+        /* 屏幕显示样式 */
+        .input-ghost { background: transparent; transition: all 0.2s; }
+        .input-ghost:focus { background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); border-radius: 4px; }
         
-        /* 屏幕交互样式 */
-        .input-ghost { transition: all 0.2s; border-bottom: 2px solid transparent; }
-        .input-ghost:focus { border-bottom-color: var(--brand-accent); background: #f8fafc; }
-        
-        /* ==========================================================================
-           [关键修复] Print CSS - 不改变逻辑，只强制浏览器行为
-           ========================================================================== */
+        /* 内部数据列：屏幕显示淡色，打印完全隐藏 */
+        .internal-col input { color: #64748b; font-size: 0.85em; }
+        .internal-col input:focus { color: #0f172a; }
+
+        /* ==================== 核心修复：打印专用样式 ==================== */
         @media print {
-            /* 1. 全局重置：强制白底黑字，强制显示背景色 */
+            @page { margin: 10mm; size: A4; }
+            
             body { 
                 background: white !important; 
-                color: black !important;
                 -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
-                padding: 0 !important;
-                margin: 0 !important;
+                margin: 0 !important; padding: 0 !important;
             }
 
-            /* 2. 隐藏无关元素：导航栏、按钮、滚动条 */
-            nav, button, .no-print, ::-webkit-scrollbar { 
+            /* 1. 隐藏导航、按钮、添加行、删除图标 */
+            nav, button, .no-print, .fa-trash-alt, .fa-times { 
                 display: none !important; 
             }
 
-            /* 3. 核心修复：强制展开高度，允许分页 */
+            /* 2. 核心：隐藏所有标记为 "internal-col" 的列 (成本/利润/链接) */
+            .internal-col { 
+                display: none !important; 
+            }
+            /* 调整剩余列宽，让表格打印时铺满 */
+            .print-wide { width: auto !important; }
+
+            /* 3. 修复截断问题：允许溢出，允许自动高度 */
             html, body, #app, main {
                 height: auto !important;
-                overflow: visible !important; /* 关键：允许内容溢出分页 */
+                overflow: visible !important;
                 width: 100% !important;
                 max-width: none !important;
-                position: static !important;
-            }
-
-            /* 4. 容器去样式：打印时不需要阴影和圆角 */
-            main {
+                position: relative !important;
                 box-shadow: none !important;
                 border: none !important;
-                border-radius: 0 !important;
+            }
+            
+            main { padding: 0 !important; margin: 0 !important; }
+
+            /* 4. 分页控制 */
+            .page-break { page-break-inside: avoid; margin-bottom: 2rem; }
+            tr { page-break-inside: avoid; }
+
+            /* 5. 输入框纯文本化 */
+            input, textarea { 
+                border: none !important; 
+                background: transparent !important; 
+                resize: none !important; 
+                padding: 0 !important; 
                 margin: 0 !important;
-                padding: 20px !important; /* 给纸张留白 */
-            }
-
-            /* 5. 分页控制：防止表格行被切成两半 */
-            .page-break { 
-                page-break-inside: avoid; 
-                break-inside: avoid;
-                margin-bottom: 20px;
-            }
-            tr, td { 
-                page-break-inside: avoid; 
-            }
-
-            /* 6. 输入框美化：打印时去掉背景灰框，像纯文本 */
-            input, textarea {
-                background-color: transparent !important;
-                border: none !important;
-                resize: none !important;
-                padding: 0 !important;
             }
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 pb-32">
+<body class="text-slate-800 pb-32">
 
 <div id="app" v-cloak>
-    <nav class="bg-slate-900 text-white sticky top-0 z-50 shadow-xl no-print border-b border-slate-700">
-        <div class="max-w-7xl mx-auto px-4 h-14 flex justify-between items-center text-xs">
+    <nav class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center text-xs">
             <div class="flex items-center space-x-6">
-                <span class="text-lg font-black tracking-tighter italic">SIGNED<span class="text-blue-500">ON</span></span>
-                
+                <span class="text-xl font-black italic tracking-tighter">SIGNED<span class="text-blue-500">ON</span></span>
                 <div class="flex space-x-2 border-l border-slate-700 pl-6">
                     <button @click="actions.exportQuote" class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2">
-                        <i class="fas fa-download text-blue-400"></i> Save Quote (.json)
+                        <i class="fas fa-download text-blue-400"></i> Save .json
                     </button>
                     <label class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2 cursor-pointer">
-                        <i class="fas fa-folder-open text-yellow-400"></i> Load Quote
+                        <i class="fas fa-folder-open text-yellow-400"></i> Load .json
                         <input type="file" class="hidden" @change="actions.importQuote" accept=".json">
                     </label>
                 </div>
             </div>
-
             <div class="flex items-center space-x-4">
-                <button @click="actions.downloadMasterDB" class="text-slate-400 hover:text-green-400 transition flex items-center gap-2" title="Download updated DB to upload to GitHub">
+                <button @click="actions.downloadMasterDB" class="text-slate-400 hover:text-green-400 transition flex gap-2" title="Update GitHub Database">
                     <i class="fas fa-database"></i> Export Master DB
                 </button>
                 <div class="h-4 w-px bg-slate-700"></div>
                 <button @click="actions.reset" class="text-slate-400 hover:text-red-400 transition font-bold">RESET</button>
                 <button @click="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold shadow-lg transition flex items-center gap-2">
-                    <i class="fas fa-print"></i> PDF / PRINT
+                    <i class="fas fa-print"></i> PRINT PDF
                 </button>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl overflow-visible print:shadow-none print:rounded-none">
+    <main class="max-w-6xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl overflow-visible print:shadow-none print:mt-0 print:rounded-none">
         
         <header class="p-12 border-b border-slate-100 flex justify-between items-end">
             <div class="w-2/3">
-                <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Title</label>
-                <input v-model="quote.meta.title" class="w-full text-4xl font-black text-slate-900 outline-none placeholder-slate-200 uppercase" placeholder="UNTITLED PROJECT">
+                <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Reference</label>
+                <input v-model="quote.meta.title" class="w-full text-4xl font-black text-slate-900 outline-none placeholder-slate-200 uppercase" placeholder="PROJECT NAME">
             </div>
             <div class="w-1/3 text-right space-y-2">
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prepared For</label>
-                    <input v-model="quote.meta.client" class="w-full text-right font-bold text-slate-700 outline-none placeholder-slate-300 bg-slate-50 focus:bg-white p-1 rounded" placeholder="Client Name">
+                    <input v-model="quote.meta.client" class="w-full text-right font-bold text-slate-700 outline-none bg-slate-50 focus:bg-white p-1 rounded" placeholder="Client Name">
                 </div>
-                <div class="text-xs text-slate-400 font-medium">
-                    Date: <span class="text-slate-800 font-bold">{{ config.currentDate }}</span>
-                </div>
+                <div class="text-xs text-slate-400 font-medium">Date: <span class="text-slate-800 font-bold">{{ config.currentDate }}</span></div>
             </div>
         </header>
 
@@ -131,18 +123,18 @@
                 <div class="flex items-center gap-4 mb-4 border-b-2 border-slate-100 pb-2">
                     <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-bold">{{ sIdx + 1 }}</div>
                     <input v-model="section.title" class="text-xl font-bold text-slate-800 outline-none w-full bg-transparent" placeholder="Section Name">
-                    <button @click="actions.removeSection(sIdx)" class="no-print opacity-0 group-hover/section:opacity-100 text-slate-300 hover:text-red-500 transition px-2">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <button @click="actions.removeSection(sIdx)" class="no-print opacity-0 group-hover/section:opacity-100 text-slate-300 hover:text-red-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
                 </div>
 
-                <table class="w-full text-left text-sm">
+                <table class="w-full text-left text-sm border-collapse">
                     <thead>
                         <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b border-slate-100">
-                            <th class="pb-3 pl-2 w-1/2">Description / Specification</th>
-                            <th class="pb-3 text-center w-20">Qty</th>
-                            <th class="pb-3 text-right w-32">Unit Price</th>
-                            <th class="pb-3 text-right w-32">Total</th>
+                            <th class="pb-3 pl-2 w-[35%] print-wide">Description & Links</th>
+                            <th class="pb-3 text-right w-[10%] internal-col bg-yellow-50/50 text-yellow-600">Cost</th>
+                            <th class="pb-3 text-right w-[10%] internal-col bg-yellow-50/50 text-yellow-600">Margin%</th>
+                            <th class="pb-3 text-center w-[10%]">Qty</th>
+                            <th class="pb-3 text-right w-[15%]">Unit Price</th>
+                            <th class="pb-3 text-right w-[15%]">Total</th>
                             <th class="pb-3 w-8 no-print"></th>
                         </tr>
                     </thead>
@@ -152,205 +144,4 @@
                                 <input v-model="item.name" list="dbList" 
                                     @input="logic.handleItemInput(item)" 
                                     @change="logic.learnItem(item)"
-                                    class="w-full font-bold text-slate-700 outline-none bg-transparent placeholder-slate-300 mb-1" 
-                                    placeholder="Start typing item name...">
-                                <textarea v-model="item.desc" rows="1" 
-                                    class="w-full text-xs text-slate-400 outline-none bg-transparent resize-none overflow-hidden placeholder-slate-200" 
-                                    placeholder="Additional details..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                            </td>
-                            
-                            <td class="py-3 align-top">
-                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-100/50 rounded py-1 outline-none focus:bg-white focus:ring-2 ring-blue-100">
-                            </td>
-                            
-                            <td class="py-3 align-top">
-                                <div class="relative">
-                                    <span class="absolute left-2 top-1 text-slate-300 text-xs">$</span>
-                                    <input type="number" v-model.number="item.price" step="0.01" 
-                                        @change="logic.learnItem(item)"
-                                        class="w-full text-right font-bold text-slate-600 bg-slate-100/50 rounded py-1 pl-6 outline-none focus:bg-white focus:ring-2 ring-blue-100">
-                                </div>
-                            </td>
-                            
-                            <td class="py-3 text-right font-black text-slate-800 align-top pt-2">
-                                ${{ (item.qty * item.price).toFixed(2) }}
-                            </td>
-
-                            <td class="py-3 text-center align-top pt-2 no-print">
-                                <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-200 hover:text-red-500 transition opacity-0 group-hover/row:opacity-100">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button @click="actions.addItem(sIdx)" class="mt-2 text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase tracking-widest no-print flex items-center gap-1">
-                    <i class="fas fa-plus"></i> Add Line Item
-                </button>
-            </div>
-
-            <div class="flex justify-center py-8 no-print border-t border-dashed border-slate-200">
-                <button @click="actions.addSection" class="group px-6 py-3 rounded-full border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-400 text-xs font-bold uppercase tracking-widest transition bg-white">
-                    Add New Page Section
-                </button>
-            </div>
-        </div>
-
-        <footer class="bg-slate-50 p-12 border-t border-slate-200 page-break">
-            <div class="flex justify-end">
-                <div class="w-64 space-y-3">
-                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
-                        <span>Subtotal</span>
-                        <span class="text-slate-800">${{ totals.sub.toFixed(2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase pb-3 border-b border-slate-200">
-                        <span>GST (10%)</span>
-                        <span class="text-slate-800">${{ totals.gst.toFixed(2) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <span class="text-xs font-black text-slate-900 uppercase tracking-widest">Total AUD</span>
-                        <span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span>
-                    </div>
-                </div>
-            </div>
-        </footer>
-    </main>
-
-    <datalist id="dbList">
-        <option v-for="item in db.combined" :value="item.name">{{ item.name }} - ${{ item.sell }}</option>
-    </datalist>
-</div>
-
-<script>
-    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
-
-    createApp({
-        setup() {
-            // --- State Management ---
-            const config = reactive({
-                currentDate: new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
-                repoDB: [],    // 来自 database.json
-                localDB: []    // 来自 localStorage (新学习的项目)
-            });
-
-            const quote = ref({
-                meta: { title: '', client: '' },
-                sections: [
-                    { id: 1, title: 'Production Scope', items: [{ name: '', desc: '', qty: 1, price: 0 }] }
-                ]
-            });
-
-            // --- Database Logic ---
-            const loadDatabase = async () => {
-                // 1. Load Repo DB
-                try {
-                    const res = await fetch('database.json');
-                    if (res.ok) config.repoDB = await res.json();
-                } catch (e) { console.error("DB Load Error", e); }
-
-                // 2. Load Local Overrides
-                const local = localStorage.getItem('so_custom_db');
-                if (local) config.localDB = JSON.parse(local);
-            };
-
-            // Unified Database
-            const db = reactive({
-                combined: computed(() => {
-                    const map = new Map();
-                    config.repoDB.forEach(i => map.set(i.name, i));
-                    config.localDB.forEach(i => map.set(i.name, i));
-                    return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
-                })
-            });
-
-            // --- Core Logic ---
-            const logic = {
-                handleItemInput: (item) => {
-                    const match = db.combined.find(d => d.name === item.name);
-                    if (match) {
-                        item.price = match.sell || match.price || 0;
-                        if (!item.desc) item.desc = "Standard specifications apply."; 
-                    }
-                },
-                learnItem: (item) => {
-                    if (!item.name || item.price <= 0) return;
-                    const inRepo = config.repoDB.find(d => d.name === item.name && d.sell === item.price);
-                    if (inRepo) return;
-                    const idx = config.localDB.findIndex(d => d.name === item.name);
-                    if (idx > -1) { config.localDB[idx].sell = item.price; } 
-                    else { config.localDB.push({ name: item.name, sell: item.price, cost: 0 }); }
-                    localStorage.setItem('so_custom_db', JSON.stringify(config.localDB));
-                }
-            };
-
-            // --- Actions ---
-            const actions = {
-                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, price: 0 }),
-                removeItem: (sIdx, iIdx) => {
-                    if (quote.value.sections[sIdx].items.length > 1) {
-                        quote.value.sections[sIdx].items.splice(iIdx, 1);
-                    } else {
-                        quote.value.sections[sIdx].items[0] = { name: '', desc: '', qty: 1, price: 0 };
-                    }
-                },
-                addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', desc: '', qty: 1, price: 0 }] }),
-                removeSection: (sIdx) => { if(confirm("Remove section?")) quote.value.sections.splice(sIdx, 1); },
-                
-                exportQuote: () => {
-                    const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: 'application/json' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `Quote_${quote.value.meta.title || 'Draft'}.json`;
-                    a.click();
-                },
-                importQuote: (e) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => quote.value = JSON.parse(ev.target.result);
-                    reader.readAsText(e.target.files[0]);
-                },
-                
-                downloadMasterDB: () => {
-                    const masterList = db.combined.map(i => ({
-                        name: i.name,
-                        cost: i.cost || 0,
-                        sell: i.sell || i.price || 0
-                    }));
-                    const blob = new Blob([JSON.stringify(masterList, null, 2)], { type: 'application/json' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = 'database.json'; 
-                    a.click();
-                    alert("Export Complete: Upload this 'database.json' to GitHub to update the team.");
-                },
-
-                reset: () => {
-                    if(confirm("Reset all data?")) {
-                        localStorage.removeItem('so_current_quote');
-                        location.reload();
-                    }
-                }
-            };
-
-            const totals = computed(() => {
-                let sub = 0;
-                quote.value.sections.forEach(sec => {
-                    sec.items.forEach(item => sub += (item.qty * item.price));
-                });
-                return { sub, gst: sub * 0.1, grand: sub * 1.1 };
-            });
-
-            onMounted(() => {
-                loadDatabase();
-                const saved = localStorage.getItem('so_current_quote');
-                if (saved) quote.value = JSON.parse(saved);
-            });
-            
-            watch(quote, (val) => localStorage.setItem('so_current_quote', JSON.stringify(val)), { deep: true });
-
-            return { config, quote, db, logic, actions, totals };
-        }
-    }).mount('#app');
-</script>
-</body>
-</html>
+                                    class="w-full font
