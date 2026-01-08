@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn Pro</title>
+    <title>SignedOn Pro | Auto-Flow</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -32,22 +32,17 @@
     <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-2xl">
         <div class="flex items-center space-x-4">
             <span class="text-xl font-black italic tracking-tighter mr-4">signed<span class="text-blue-500">on</span></span>
-            
             <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg flex items-center transition">
                 <i class="fas fa-folder-open mr-2 text-yellow-400"></i>
                 <span class="font-bold uppercase tracking-widest text-[10px]">Open File</span>
                 <input type="file" class="hidden" @change="importJson">
             </label>
-
             <button @click="exportJson" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg flex items-center transition">
                 <i class="fas fa-save mr-2 text-blue-400"></i>
                 <span class="font-bold uppercase tracking-widest text-[10px]">Save JSON</span>
             </button>
         </div>
-        
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">
-            Generate PDF
-        </button>
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Generate PDF</button>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-8 px-6">
@@ -62,7 +57,7 @@
                 <div>
                     <label class="text-[7px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
                     <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-sm w-full outline-none bg-transparent border-b border-slate-50 focus:border-blue-400" placeholder="Client Name">
-                    <div class="print-only text-sm font-bold">{{ quoteData.client }}</div>
+                    <div class="print-only text-sm font-bold text-right">{{ quoteData.client }}</div>
                 </div>
                 <div class="border-t border-slate-50 pt-2 space-y-0.5">
                     <div class="flex justify-between items-center text-[9px]"><span class="text-slate-400 uppercase">Issue</span><span class="font-bold">{{ currentDate }}</span></div>
@@ -95,8 +90,12 @@
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative group">
                             <td class="px-6 py-4 overflow-visible">
                                 <div class="relative">
-                                    <input v-model="item.name" @input="filterItems(sIndex, iIndex)" @focus="item.showSuggestions = true" @blur="hideSuggestions(item)"
-                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none" placeholder="Start typing...">
+                                    <input v-model="item.name" 
+                                           @input="handleItemInput(sIndex, iIndex)" 
+                                           @focus="item.showSuggestions = true" 
+                                           @blur="hideSuggestions(item)"
+                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none" placeholder="Start typing item...">
+                                    
                                     <div v-if="item.showSuggestions && filteredDbItems.length" class="suggestion-box">
                                         <div v-for="dbItem in filteredDbItems" @mousedown="selectItem(sIndex, iIndex, dbItem)" class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">
                                             <div class="font-bold text-xs">{{ dbItem.name }}</div>
@@ -105,7 +104,7 @@
                                     </div>
                                     <div class="print-only font-bold text-[12px]">{{ item.name }}</div>
                                 </div>
-                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1" placeholder="Details...">
+                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1" placeholder="Specifications...">
                                 <div class="print-only text-[9px] text-slate-400 italic">{{ item.details }}</div>
                             </td>
                             <td class="px-2 py-4 text-center">
@@ -160,33 +159,42 @@
                 return itemDatabase.filter(i => i.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
             });
 
-            const filterItems = (sIdx, iIdx) => {
-                searchQuery.value = quoteData.value.sections[sIdx].items[iIdx].name;
-                quoteData.value.sections[sIdx].items[iIdx].showSuggestions = true;
+            // 核心修复：输入时自动检查是否需要加行
+            const handleItemInput = (sIdx, iIdx) => {
+                const section = quoteData.value.sections[sIdx];
+                const item = section.items[iIdx];
+                searchQuery.value = item.name;
+                item.showSuggestions = true;
+
+                // 如果在最后一行输入内容，自动加一行
+                if (iIdx === section.items.length - 1 && item.name.trim() !== '') {
+                    addItem(sIdx);
+                }
             };
 
             const selectItem = (sIdx, iIdx, dbItem) => {
-                const item = quoteData.value.sections[sIdx].items[iIdx];
+                const section = quoteData.value.sections[sIdx];
+                const item = section.items[iIdx];
                 Object.assign(item, { name: dbItem.name, details: dbItem.details, price: dbItem.price, showSuggestions: false });
+                
+                // 选择后也检查是否需要加行
+                if (iIdx === section.items.length - 1) {
+                    addItem(sIdx);
+                }
             };
 
-            const importJson = (e) => {
-                if (!e.target.files.length) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        quoteData.value = JSON.parse(ev.target.result);
-                    } catch (err) { alert("Invalid File"); }
-                };
-                reader.readAsText(e.target.files[0]);
-            };
+            const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false });
 
             return { 
-                quoteData, filteredDbItems, filterItems, selectItem, importJson,
+                quoteData, filteredDbItems, handleItemInput, selectItem, addItem,
                 addSection: () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0, showSuggestions: false }] }),
-                addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false }),
                 removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
+                importJson: (e) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { quoteData.value = JSON.parse(ev.target.result); };
+                    reader.readAsText(e.target.files[0]);
+                },
                 subTotal: computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0)),
                 currentDate: ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
                 expiryDate: ref(new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
@@ -196,7 +204,7 @@
                 exportJson: () => {
                     const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                    a.download = `Quote_${quoteData.value.title || 'Export'}.json`; a.click();
+                    a.download = `Quote_${quoteData.value.title}.json`; a.click();
                 }
             };
         }
