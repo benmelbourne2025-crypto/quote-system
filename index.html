@@ -9,30 +9,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         [v-cloak] { display: none !important; }
+        /* 恢复 QTY 的上下箭头 [对应您的需求] */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: inner-spin-button !important;
+            opacity: 1;
+        }
         @media print { 
-            @page { size: A4; margin: 8mm 10mm; }
             .no-print { display: none !important; } 
-            .page-container { width: 100% !important; padding: 0 !important; margin: 0 !important; }
-            header { page-break-after: avoid; }
-            .section-block { page-break-inside: auto; margin-bottom: 10px !important; }
+            .page-container { width: 100% !important; padding: 0 !important; }
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+<body class="bg-slate-50 min-h-screen">
 
 <div id="app" v-cloak>
     <nav class="bg-slate-900 text-white p-2.5 sticky top-0 z-50 no-print shadow-xl">
         <div class="container mx-auto max-w-6xl flex justify-between items-center text-xs">
             <div class="flex items-center space-x-4">
                 <span class="text-lg font-bold italic">signed<span class="text-pink-500">on</span></span>
-                <button @click="exportJson" class="bg-blue-900/40 px-3 py-1.5 rounded border border-blue-700/50 flex items-center font-bold">
-                    <i class="fas fa-file-export mr-2 text-blue-400"></i> Save As (.json)
-                </button>
+                <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/30">Auto-Learning DB Active</span>
             </div>
             <div class="flex items-center space-x-3">
-                <button @click="clearData" class="text-slate-400 hover:text-red-400 px-2 font-bold uppercase transition">Reset</button>
-                <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded font-black transition shadow-lg flex items-center">
-                    <i class="fas fa-print mr-2"></i> Generate PDF
+                <button @click="clearData" class="text-slate-400 hover:text-red-400 px-2 font-bold uppercase">Reset</button>
+                <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded font-black shadow-lg flex items-center">
+                    <i class="fas fa-print mr-2"></i> Print PDF
                 </button>
             </div>
         </div>
@@ -43,35 +44,28 @@
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div class="md:col-span-7">
                     <label class="text-[9px] font-black text-blue-500 uppercase block mb-0.5">Project Name</label>
-                    <input v-model="quoteData.title" class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent" placeholder="Enter Project Name..." @input="saveLocal">
+                    <input v-model="quoteData.title" class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent" placeholder="Enter Project Name...">
                 </div>
                 <div class="md:col-span-3 border-l border-slate-100 pl-4">
                     <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Prepared For</label>
-                    <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded" placeholder="Client Name" @input="saveLocal">
+                    <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded" placeholder="Client Name">
                 </div>
-                <div class="md:col-span-2 text-right text-sm font-black text-slate-800">
+                <div class="md:col-span-2 text-right">
                     <div class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Date</div>
-                    {{ currentDate }}
+                    <div class="text-sm font-black text-slate-800">{{ currentDate }}</div>
                 </div>
             </div>
         </header>
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="section-block mb-6">
-            <div class="flex items-center justify-between mb-2 no-print">
-                <div class="flex items-center space-x-2 font-black text-slate-800">
-                    <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[10px]">{{ sIndex + 1 }}</span>
-                    <input v-model="section.title" class="outline-none bg-transparent">
-                </div>
-            </div>
-
             <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-                <table class="w-full text-xs">
+                <table class="w-full text-xs text-left">
                     <thead class="bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                         <tr>
-                            <th class="px-6 py-3 text-left">Description</th>
-                            <th class="px-4 py-3 text-center w-20">Qty</th>
-                            <th class="px-4 py-3 text-right w-28">Unit ($)</th>
-                            <th class="px-6 py-3 text-right w-32">Sub Total</th>
+                            <th class="px-6 py-3">Description</th>
+                            <th class="px-4 py-3 w-24 text-center">Qty</th>
+                            <th class="px-4 py-3 w-32 text-right">Unit ($)</th>
+                            <th class="px-6 py-3 w-32 text-right">Sub Total</th>
                             <th class="px-4 py-3 w-10 no-print"></th>
                         </tr>
                     </thead>
@@ -79,16 +73,27 @@
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex">
                             <td class="px-6 py-3">
                                 <input v-model="item.name" list="matList" 
-                                       @input="handleInput(sIndex, iIndex)" 
-                                       @change="autoFillPrice(sIndex, iIndex)"
-                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Start typing to add line...">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Optional details...">
+                                       @input="handleInput(sIndex, iIndex)"
+                                       @blur="learnNewItem(item)"
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Type item name...">
+                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Details...">
                             </td>
-                            <td class="px-4 py-3 text-center"><input type="number" v-model.number="item.qty" class="w-16 text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none"></td>
-                            <td class="px-4 py-3 text-right"><input type="number" v-model.number="item.price" class="w-24 text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none"></td>
-                            <td class="px-6 py-3 text-right font-black text-slate-900">${{ (item.qty * item.price).toFixed(2) }}</td>
+                            <td class="px-4 py-3">
+                                <input type="number" v-model.number="item.qty" step="1"
+                                       class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none border border-transparent hover:border-slate-200">
+                            </td>
+                            <td class="px-4 py-3">
+                                <input type="number" v-model.number="item.price" step="0.01"
+                                       @blur="learnNewItem(item)"
+                                       class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none border border-transparent hover:border-slate-200">
+                            </td>
+                            <td class="px-6 py-3 text-right font-black text-slate-900">
+                                ${{ (item.qty * item.price).toFixed(2) }}
+                            </td>
                             <td class="px-4 py-3 text-center no-print">
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-red-300 hover:text-red-500"><i class="fas fa-minus-circle"></i></button>
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-red-300 hover:text-red-500 transition-colors">
+                                    <i class="fas fa-minus-circle"></i>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -114,12 +119,8 @@
             </div>
         </div>
 
-        <div class="flex justify-center mb-32 no-print">
-            <button @click="addSection" class="bg-white border-2 border-dashed border-slate-200 px-10 py-3 rounded-xl text-slate-400 text-xs font-bold hover:bg-slate-50 transition">+ Add New Section</button>
-        </div>
-
         <datalist id="matList">
-            <option v-for="m in database" :key="m.name" :value="m.name"></option>
+            <option v-for="m in allItems" :key="m.name" :value="m.name"></option>
         </datalist>
     </div>
 </div>
@@ -129,59 +130,87 @@
 
     createApp({
         setup() {
-            const database = ref([]);
+            const externalDB = ref([]); // 原始 database.json
+            const customDB = ref([]);   // 用户手动输入学习到的库
             const currentDate = ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }));
-            const initialData = {
+            
+            const quoteData = ref({
                 title: '', client: '',
                 sections: [{ id: Date.now(), title: 'Section 1', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
-            };
-            const quoteData = ref(initialData);
-
-            onMounted(async () => {
-                const saved = localStorage.getItem('signedon_v7_draft');
-                if (saved) { try { quoteData.value = JSON.parse(saved); } catch (e) { quoteData.value = initialData; } }
-                try {
-                    const res = await fetch('database.json');
-                    if (res.ok) database.value = await res.json();
-                } catch (e) { console.warn("Database error"); }
             });
 
-            const saveLocal = () => localStorage.setItem('signedon_v7_draft', JSON.stringify(quoteData.value));
-            watch(quoteData, saveLocal, { deep: true });
+            // 合并原始库和用户学习库
+            const allItems = computed(() => {
+                const combined = [...externalDB.value, ...customDB.value];
+                // 根据名称去重
+                return combined.filter((v, i, a) => a.findIndex(t => t.name === v.name) === i);
+            });
 
-            // 核心：处理输入并自动增行
+            onMounted(async () => {
+                // 加载草稿
+                const savedDraft = localStorage.getItem('signedon_v8_draft');
+                if (savedDraft) quoteData.value = JSON.parse(savedDraft);
+                
+                // 加载用户学习的物料
+                const savedCustom = localStorage.getItem('signedon_custom_db');
+                if (savedCustom) customDB.value = JSON.parse(savedCustom);
+
+                // 加载基础库
+                try {
+                    const res = await fetch('database.json');
+                    if (res.ok) externalDB.value = await res.json();
+                } catch (e) { console.log("External DB not found, using memory only."); }
+            });
+
+            // 自动增行逻辑
             const handleInput = (sIdx, iIdx) => {
                 const section = quoteData.value.sections[sIdx];
                 const item = section.items[iIdx];
-                // 如果当前输入的是最后一行且不为空，自动增加一个新行
+                
+                // 1. 如果输入的是最后一行，自动加空行
                 if (iIdx === section.items.length - 1 && item.name.trim() !== '') {
-                    addItem(sIdx);
+                    section.items.push({ name: '', details: '', qty: 1, price: 0 });
+                }
+
+                // 2. 匹配数据库自动填价
+                const match = allItems.value.find(m => m.name === item.name);
+                if (match) {
+                    item.price = match.sell || match.price;
+                    if (!item.details) item.details = match.name;
                 }
             };
 
-            const autoFillPrice = (sIdx, iIdx) => {
-                const item = quoteData.value.sections[sIdx].items[iIdx];
-                const found = database.value.find(m => m.name === item.name);
-                if (found) { item.price = found.sell; item.details = found.name; }
+            // 自动学习新物料逻辑 [对应您的需求]
+            const learnNewItem = (item) => {
+                if (!item.name || item.price <= 0) return;
+                
+                const exists = allItems.value.find(m => m.name === item.name);
+                // 如果是新名字，或者价格变了，更新用户库
+                if (!exists || exists.sell !== item.price) {
+                    const newEntry = { name: item.name, sell: item.price };
+                    const idx = customDB.value.findIndex(m => m.name === item.name);
+                    
+                    if (idx > -1) customDB.value[idx] = newEntry;
+                    else customDB.value.push(newEntry);
+                    
+                    localStorage.setItem('signedon_custom_db', JSON.stringify(customDB.value));
+                }
             };
 
-            const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (Number(i.qty) || 0) * (Number(i.price) || 0), 0), 0));
+            // 数据保存和计算
+            watch(quoteData, (newVal) => localStorage.setItem('signedon_v8_draft', JSON.stringify(newVal)), { deep: true });
+
+            const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0));
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
-            
-            const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 });
-            const removeItem = (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1);
-            const addSection = () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] });
-            const printQuote = () => window.print();
-            const clearData = () => { if(confirm("Reset?")) { quoteData.value = initialData; } };
-            const exportJson = () => {
-                const blob = new Blob([JSON.stringify(quoteData.value, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = `Quote_${quoteData.value.client || 'file'}.json`; a.click();
-            };
 
-            return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, handleInput, autoFillPrice, addSection, addItem, removeItem, printQuote, clearData, exportJson };
+            return { 
+                quoteData, allItems, currentDate, subTotal, gstAmount, grandTotal, 
+                handleInput, learnNewItem, addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }),
+                removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
+                printQuote: () => window.print(),
+                clearData: () => { if(confirm("Clear all?")) localStorage.removeItem('signedon_v8_draft'); location.reload(); }
+            };
         }
     }).mount('#app');
 </script>
