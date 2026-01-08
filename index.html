@@ -9,48 +9,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         [v-cloak] { display: none !important; }
-        
-        /* 深度 PDF 打印优化 [针对 image_2ecb25 的修复] */
         @media print { 
-            @page {
-                size: A4;
-                margin: 8mm 10mm; 
-            }
-            body { 
-                background: white !important; 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+            @page { size: A4; margin: 8mm 10mm; }
+            body { background: white !important; -webkit-print-color-adjust: exact; }
             .no-print { display: none !important; } 
-            
-            /* 核心修复：防止首页空白 */
-            .page-container { 
-                width: 100% !important; 
-                max-width: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-                display: block !important;
-            }
-            
-            /* 保持头部紧凑 */
-            header { 
-                margin-top: 0 !important;
-                margin-bottom: 15px !important; 
-                padding: 12px !important;
-                border: 1px solid #f1f5f9 !important;
-                page-break-after: avoid; /* 严禁在头部后直接分页 */
-            }
-
-            .section-block {
-                page-break-inside: auto; /* 允许表格跨页，但不强制分页 */
-                margin-bottom: 15px !important;
-            }
-            
+            .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+            header { margin-bottom: 15px !important; padding: 12px !important; border: 1px solid #f1f5f9 !important; page-break-after: avoid; }
+            .section-block { page-break-inside: auto; margin-bottom: 15px !important; }
             table { font-size: 10px !important; }
-            input { border: none !important; background: transparent !important; }
         }
-
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
@@ -71,7 +38,6 @@
                     </label>
                 </div>
             </div>
-            
             <div class="flex items-center space-x-3">
                 <button @click="clearData" class="text-slate-400 hover:text-red-400 px-2 font-bold uppercase transition">Reset</button>
                 <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded font-black transition shadow-lg flex items-center">
@@ -82,20 +48,15 @@
     </nav>
 
     <div class="container mx-auto max-w-5xl py-6 px-6 page-container">
-        
         <header class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div class="md:col-span-7">
                     <label class="text-[9px] font-black text-blue-500 uppercase tracking-widest block mb-0.5">Project Name</label>
-                    <input v-model="quoteData.title" 
-                           class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent border-b border-transparent focus:border-blue-100 py-0.5" 
-                           placeholder="Enter Project Name..." @input="saveLocal">
+                    <input v-model="quoteData.title" class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent" placeholder="Enter Project Name..." @input="saveLocal">
                 </div>
                 <div class="md:col-span-3 border-l border-slate-100 pl-4">
                     <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Prepared For</label>
-                    <input v-model="quoteData.client" 
-                           class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded focus:ring-1 ring-blue-100" 
-                           placeholder="Client Name" @input="saveLocal">
+                    <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded" placeholder="Client Name" @input="saveLocal">
                 </div>
                 <div class="md:col-span-2 text-right">
                     <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Date</div>
@@ -106,11 +67,10 @@
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="section-block mb-6">
             <div class="flex items-center justify-between mb-2 no-print">
-                <div class="flex items-center space-x-2">
-                    <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center font-bold text-[10px]">{{ sIndex + 1 }}</span>
-                    <input v-model="section.title" class="text-base font-black text-slate-800 outline-none bg-transparent" @input="saveLocal">
+                <div class="flex items-center space-x-2 font-black text-slate-800">
+                    <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[10px]">{{ sIndex + 1 }}</span>
+                    <input v-model="section.title" class="outline-none bg-transparent" @input="saveLocal">
                 </div>
-                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="text-slate-300 hover:text-red-500 transition px-2"><i class="fas fa-trash-alt text-xs"></i></button>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
@@ -127,14 +87,17 @@
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex">
                             <td class="px-6 py-3">
-                                <input v-model="item.name" list="matList" @change="autoFill(item)" class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Search..." @input="saveLocal">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Add specs..." @input="saveLocal">
+                                <input v-model="item.name" list="matList" 
+                                       @change="handleItemChange(sIndex, iIndex)" 
+                                       @keydown.enter="addItem(sIndex)"
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Search item..." @input="saveLocal">
+                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Details..." @input="saveLocal">
                             </td>
                             <td class="px-4 py-3"><input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none" @input="saveLocal"></td>
                             <td class="px-4 py-3"><input type="number" v-model.number="item.price" class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none" @input="saveLocal"></td>
-                            <td class="px-6 py-3 text-right font-black text-slate-900">${{ (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2}) }}</td>
+                            <td class="px-6 py-3 text-right font-black text-slate-900">${{ (item.qty * item.price).toFixed(2) }}</td>
                             <td class="px-4 py-3 text-center no-print">
-                                <button @click="removeItem(sIndex, iIndex)" class="text-red-400 hover:text-red-600 transition-colors">
+                                <button @click="removeItem(sIndex, iIndex)" class="text-red-300 hover:text-red-600 transition-colors">
                                     <i class="fas fa-minus-circle text-lg"></i>
                                 </button>
                             </td>
@@ -143,7 +106,7 @@
                 </table>
                 <div class="p-2 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
                     <button @click="addItem(sIndex)" class="text-[9px] font-black text-blue-600 hover:underline px-4 py-1 tracking-widest">
-                        <i class="fas fa-plus-circle mr-1"></i> ADD LINE ITEM
+                        <i class="fas fa-plus-circle mr-1"></i> ADD LINE
                     </button>
                 </div>
             </div>
@@ -152,12 +115,12 @@
         <div class="flex justify-end pt-4 mb-20">
             <div class="w-64 space-y-1.5">
                 <div class="px-3 space-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-800">${{ subTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
-                    <div class="flex justify-between border-b border-slate-100 pb-1.5"><span>GST (10%)</span><span class="text-slate-800">${{ gstAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</span></div>
+                    <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-800">${{ subTotal.toFixed(2) }}</span></div>
+                    <div class="flex justify-between border-b border-slate-100 pb-1.5"><span>GST (10%)</span><span class="text-slate-800">${{ gstAmount.toFixed(2) }}</span></div>
                 </div>
                 <div class="bg-blue-600 rounded-lg p-4 text-white shadow-lg">
                     <div class="text-[9px] font-bold uppercase tracking-widest opacity-80 mb-0.5">Grand Total</div>
-                    <div class="text-2xl font-black leading-none">${{ grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</div>
+                    <div class="text-2xl font-black leading-none">${{ grandTotal.toFixed(2) }}</div>
                 </div>
             </div>
         </div>
@@ -187,7 +150,7 @@
             const quoteData = ref(initialData);
 
             onMounted(async () => {
-                const saved = localStorage.getItem('signedon_v5_draft');
+                const saved = localStorage.getItem('signedon_v6_draft');
                 if (saved) { try { quoteData.value = JSON.parse(saved); } catch (e) { quoteData.value = initialData; } }
                 try {
                     const res = await fetch('database.json');
@@ -195,7 +158,30 @@
                 } catch (e) { console.warn("Database offline"); }
             });
 
-            const saveLocal = () => localStorage.setItem('signedon_v5_draft', JSON.stringify(quoteData.value));
+            const saveLocal = () => localStorage.setItem('signedon_v6_draft', JSON.stringify(quoteData.value));
+
+            // 处理物料选择并自动加行
+            const handleItemChange = (sIdx, iIdx) => {
+                const item = quoteData.value.sections[sIdx].items[iIdx];
+                const found = database.value.find(m => m.name === item.name);
+                if (found) { 
+                    item.price = found.sell; 
+                    item.details = found.name; 
+                }
+                // 核心逻辑：如果修改的是最后一行，且已经填写了内容，则自动加一行空行
+                if (iIdx === quoteData.value.sections[sIdx].items.length - 1 && item.name !== '') {
+                    addItem(sIdx);
+                }
+                saveLocal();
+            };
+
+            const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (Number(i.qty) || 0) * (Number(i.price) || 0), 0), 0));
+            const gstAmount = computed(() => subTotal.value * 0.1);
+            const grandTotal = computed(() => subTotal.value * 1.1);
+            
+            const addItem = (sIdx) => { quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }); saveLocal(); };
+            const removeItem = (sIdx, iIdx) => { if(quoteData.value.sections[sIdx].items.length > 1) quoteData.value.sections[sIdx].items.splice(iIdx, 1); saveLocal(); };
+            const addSection = () => { quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }); saveLocal(); };
 
             const exportJson = () => {
                 const fileName = `Quote_${quoteData.value.client || 'Project'}_${new Date().toISOString().slice(0,10)}.json`;
@@ -213,10 +199,7 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    try {
-                        quoteData.value = JSON.parse(e.target.result);
-                        saveLocal();
-                    } catch (err) { alert("Invalid file."); }
+                    try { quoteData.value = JSON.parse(e.target.result); saveLocal(); } catch (err) { alert("Invalid file."); }
                 };
                 reader.readAsText(file);
             };
@@ -227,25 +210,10 @@
                     saveLocal();
                 }
             };
-
-            const autoFill = (item) => {
-                const found = database.value.find(m => m.name === item.name);
-                if (found) { item.price = found.sell; item.details = found.name; }
-                saveLocal();
-            };
-
-            const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (Number(i.qty) || 0) * (Number(i.price) || 0), 0), 0));
-            const gstAmount = computed(() => subTotal.value * 0.1);
-            const grandTotal = computed(() => subTotal.value * 1.1);
-            
-            const addSection = () => { quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }); saveLocal(); };
-            const removeSection = (idx) => { quoteData.value.sections.splice(idx, 1); saveLocal(); };
-            const addItem = (sIdx) => { quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }); saveLocal(); };
-            const removeItem = (sIdx, iIdx) => { quoteData.value.sections[sIdx].items.splice(iIdx, 1); saveLocal(); };
             
             const printQuote = () => window.print();
 
-            return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, autoFill, addSection, removeSection, addItem, removeItem, printQuote, saveLocal, clearData, exportJson, importJson };
+            return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, handleItemChange, addSection, addItem, removeItem, printQuote, saveLocal, clearData, exportJson, importJson };
         }
     }).mount('#app');
 </script>
