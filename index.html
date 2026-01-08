@@ -240,12 +240,12 @@
                 sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null }] }]
             });
 
-            // --- Database ---
+    // --- Database (修复版) ---
             const loadDatabase = async () => {
-                try {
-                    const res = await fetch('database.json');
-                    if (res.ok) config.repoDB = await res.json();
-                } catch (e) { console.log('No DB link found, using local only'); }
+                // 1. 删除 fetch，防止覆盖你的 MASTER_DATABASE
+                // 现在的 config.repoDB 已经在 setup() 里初始化为 MASTER_DATABASE 了，所以不需要再加载
+
+                // 2. 只加载浏览器缓存 (读取你自己手动输入过的新产品)
                 const local = localStorage.getItem('so_custom_db');
                 if (local) config.localDB = JSON.parse(local);
             };
