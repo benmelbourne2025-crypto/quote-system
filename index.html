@@ -3,59 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Internal Costing Pro</title>
+    <title>SignedOn | Professional Costing System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
         [v-cloak] { display: none !important; }
 
-        /* 修复溢出布局 */
-        .master-grid { display: grid; grid-template-columns: 1fr 260px; gap: 2rem; }
+        /* 修复溢出的核心布局 */
+        .master-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 260px; /* 物理锁定右侧，防止被左侧挤出屏幕 */
+            gap: 2rem; 
+        }
         
-        /* Quotient 风格缩略图卡片 */
-        .attachment-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .thumb-card {
+        /* Quotient 风格多图附件 */
+        .attachment-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .thumb-square {
             width: 64px; height: 64px; border-radius: 6px; overflow: hidden;
             border: 1px solid #e2e8f0; position: relative; background: #fff;
-            transition: transform 0.2s; cursor: zoom-in;
+            transition: all 0.2s; cursor: pointer;
         }
-        .thumb-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
-        .thumb-card img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-square:hover { transform: scale(1.05); border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .thumb-square img { width: 100%; height: 100%; object-fit: cover; }
         .thumb-remove {
-            position: absolute; top: 0; right: 0; background: rgba(239, 68, 68, 0.9);
-            color: white; font-size: 8px; padding: 2px 4px; border-bottom-left-radius: 4px;
-            opacity: 0; transition: 0.2s;
+            position: absolute; top: 0; right: 0; background: #ef4444;
+            color: white; font-size: 10px; width: 18px; height: 18px; 
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: 0.2s; border-bottom-left-radius: 4px;
         }
-        .thumb-card:hover .thumb-remove { opacity: 1; }
+        .thumb-square:hover .thumb-remove { opacity: 1; }
         
-        /* 上传按钮 */
-        .upload-trigger {
+        /* 上传框按钮 */
+        .upload-btn {
             width: 64px; height: 64px; border: 2px dashed #cbd5e1;
             border-radius: 6px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; font-size: 10px;
-            color: #94a3b8; cursor: pointer; transition: 0.2s;
+            align-items: center; justify-content: center; font-size: 9px;
+            color: #94a3b8; cursor: pointer; transition: 0.2s; background: #fff;
         }
-        .upload-trigger:hover { border-color: #3b82f6; color: #3b82f6; background: #f0f7ff; }
+        .upload-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #f0f7ff; }
 
         @media print {
             .no-print { display: none !important; }
             .card-box { border: 1px solid #e2e8f0; box-shadow: none !important; }
-            .thumb-card { border: 1px solid #eee; }
+            body { background: white; padding: 0; }
         }
     </style>
 </head>
 <body class="pb-24">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-xl">
+    <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-2xl">
         <div class="flex items-center space-x-6">
             <span class="text-xl font-black italic tracking-tighter">signed<span class="text-blue-500">on</span></span>
             <div class="flex bg-slate-800 rounded-lg p-1">
                 <label class="cursor-pointer hover:bg-slate-700 px-4 py-2 rounded-md transition text-[10px] font-bold uppercase flex items-center">
-                    <i class="fas fa-folder-open mr-2 text-yellow-400"></i> Open JSON
+                    <i class="fas fa-folder-open mr-2 text-yellow-400"></i> Open File
                     <input type="file" class="hidden" @change="importJson">
                 </label>
                 <button @click="exportJson" class="hover:bg-slate-700 px-4 py-2 rounded-md transition text-[10px] font-bold uppercase flex items-center border-l border-slate-700">
@@ -69,20 +74,20 @@
     <div class="container mx-auto max-w-6xl py-10 px-6">
         <header class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 mb-10 p-10 card-box master-grid">
             <div class="min-w-0">
-                <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-3 block">Internal Project Ref</label>
+                <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-3 block">Project Reference</label>
                 <textarea v-model="quoteData.title" rows="1" class="edit-only text-4xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-200 uppercase tracking-tighter resize-none" placeholder="PROJECT NAME..." @input="autoResize"></textarea>
                 <div class="print-only uppercase font-black text-4xl leading-tight">{{ quoteData.title }}</div>
             </div>
 
-            <div class="space-y-5 border-l border-slate-50 pl-10">
+            <div class="space-y-5 border-l border-slate-100 pl-10">
                 <div>
-                    <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Client Contact</label>
+                    <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
                     <input v-model="quoteData.client" class="edit-only font-bold text-slate-800 text-sm w-full outline-none bg-transparent border-b border-transparent focus:border-blue-400" placeholder="Client Name">
                     <div class="print-only text-sm font-bold">{{ quoteData.client }}</div>
                 </div>
                 <div class="pt-4 border-t border-slate-50">
                     <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 uppercase">Issue Date</span><span class="font-bold">{{ currentDate }}</span></div>
-                    <div class="flex justify-between text-[10px] font-bold text-blue-600"><span class="uppercase">Valid Until</span><span>{{ expiryDate }}</span></div>
+                    <div class="flex justify-between text-[10px] font-bold text-blue-600"><span class="uppercase">Expiry</span><span>{{ expiryDate }}</span></div>
                 </div>
             </div>
         </header>
@@ -94,15 +99,14 @@
                 <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-500 ml-4"><i class="fas fa-trash-alt"></i></button>
             </div>
 
-            <div class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden card-box mb-8">
+            <div class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-visible card-box mb-8">
                 <table class="w-full text-left table-fixed border-collapse">
                     <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
                         <tr>
                             <th class="px-8 py-5 w-auto">Item Description & Attachments</th>
                             <th class="px-2 py-5 w-24 text-center">Qty</th>
                             <th class="px-2 py-5 w-32 text-right">Unit ($)</th>
-                            <th class="px-8 py-5 w-44 text-right">Sub Total</th>
-                        </tr>
+                            <th class="px-8 py-5 w-48 text-right text-blue-400">Sub Total</th> </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative group hover:bg-slate-50/50 transition-colors">
@@ -120,18 +124,18 @@
                                     <div class="print-only font-bold text-base">{{ item.name }}</div>
                                 </div>
 
-                                <div class="flex items-center mt-2 no-print bg-slate-100/50 w-fit px-2 py-1 rounded text-blue-500">
+                                <div class="flex items-center mt-2 no-print bg-blue-50/50 w-fit px-2 py-1 rounded-md text-blue-600">
                                     <i class="fas fa-link text-[10px] mr-2"></i>
-                                    <input v-model="item.fileLink" class="edit-only text-[10px] w-64 outline-none bg-transparent font-medium" placeholder="OneDrive or File Link...">
+                                    <input v-model="item.fileLink" class="edit-only text-[10px] w-64 outline-none bg-transparent font-semibold" placeholder="OneDrive or Reference Link...">
                                 </div>
 
                                 <div class="attachment-grid">
-                                    <div v-for="(img, imgIdx) in item.images" :key="imgIdx" class="thumb-card">
+                                    <div v-for="(img, imgIdx) in item.images" :key="imgIdx" class="thumb-square">
                                         <img :src="img">
                                         <div @click="removeImage(item, imgIdx)" class="thumb-remove no-print"><i class="fas fa-times"></i></div>
                                     </div>
-                                    <div class="upload-trigger no-print" @click="$refs['file'+sIndex+iIndex][0].click()">
-                                        <i class="fas fa-plus mb-1"></i>
+                                    <div class="upload-btn no-print" @click="$refs['file'+sIndex+iIndex][0].click()">
+                                        <i class="fas fa-camera-retro mb-1"></i>
                                         <span>Add Image</span>
                                         <input :ref="'file'+sIndex+iIndex" type="file" class="hidden" multiple @change="uploadImages($event, item)">
                                     </div>
@@ -139,7 +143,7 @@
                             </td>
                             
                             <td class="px-2 py-6 text-center">
-                                <input type="number" v-model.number="item.qty" class="w-16 bg-white border border-slate-200 py-2 rounded-xl text-center font-bold text-sm">
+                                <input type="number" v-model.number="item.qty" class="w-16 bg-white border border-slate-200 py-2 rounded-xl text-center font-bold text-sm outline-none focus:border-blue-400">
                             </td>
                             <td class="px-2 py-6 text-right">
                                 <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2">
@@ -157,9 +161,9 @@
                 <div @click="addItem(sIndex)" class="p-4 bg-slate-50/50 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 text-[10px] font-black text-blue-500 uppercase tracking-widest transition-colors">+ Add Line Item</div>
             </div>
             
-            <button @click="addSection" class="no-print w-full bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-[2rem] py-6 mb-12 text-blue-500 font-black text-[11px] uppercase tracking-[0.4em] hover:bg-blue-100 transition-all shadow-sm">
+            <button @click="addSection" class="no-print w-full bg-blue-50/30 border-2 border-dashed border-blue-200 rounded-[2.5rem] py-6 mb-12 text-blue-500 font-black text-[11px] uppercase tracking-[0.4em] hover:bg-blue-100 transition-all shadow-sm">
                 <i class="fas fa-plus-circle mr-2 text-base"></i> Add New Section
-            </div>
+            </button>
         </div>
 
         <div class="flex justify-end mt-16">
@@ -169,7 +173,7 @@
                     <span>Subtotal</span>
                     <span>${{ subTotal.toFixed(2) }}</span>
                 </div>
-                <div class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 mb-2">Total (Inc. GST)</div>
+                <div class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 mb-2">Total Amount (Inc. GST)</div>
                 <div class="text-6xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
         </div>
@@ -180,14 +184,14 @@
     const { createApp, ref, computed } = Vue;
     const itemDatabase = [
         { name: "18 Gauge Speaker Cable - 100m", details: "Direct Costing", price: 430.92 },
-        { name: "3M - 3900 High Intensity Prismatic", details: "Premium Reflective", price: 102.00 }
+        { name: "3M - 3900 High Intensity Prismatic", details: "Premium Material", price: 102.00 }
     ];
 
     createApp({
         setup() {
             const quoteData = ref({
                 title: '', client: '',
-                sections: [{ id: Date.now(), title: 'Main Production', items: [{ name: '', qty: 1, price: 0, images: [], fileLink: '', showSuggestions: false }] }]
+                sections: [{ id: Date.now(), title: 'Production Costs', items: [{ name: '', qty: 1, price: 0, images: [], fileLink: '', showSuggestions: false }] }]
             });
 
             const searchQuery = ref('');
@@ -197,10 +201,12 @@
             });
 
             const handleItemInput = (sIdx, iIdx) => {
-                const item = quoteData.value.sections[sIdx].items[iIdx];
+                const section = quoteData.value.sections[sIdx];
+                const item = section.items[iIdx];
                 searchQuery.value = item.name;
                 item.showSuggestions = true;
-                if (iIdx === quoteData.value.sections[sIdx].items.length - 1 && item.name !== '') addItem(sIdx);
+                // 核心逻辑：最后一行输入内容时自动加新行
+                if (iIdx === section.items.length - 1 && item.name.trim() !== '') addItem(sIdx);
             };
 
             const selectItem = (sIdx, iIdx, dbItem) => {
@@ -235,7 +241,7 @@
                 exportJson: () => {
                     const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                    a.download = `Costing_${quoteData.value.title}.json`; a.click();
+                    a.download = `Costing_${quoteData.value.title || 'Export'}.json`; a.click();
                 },
                 importJson: (e) => {
                     const reader = new FileReader();
