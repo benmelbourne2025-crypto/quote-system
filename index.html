@@ -1,47 +1,210 @@
-<tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50 transition-colors">
-    <td class="px-8 py-6">
-        <div class="flex flex-col">
-            <input 
-                v-model="item.name" 
-                @input="handleItemInput(sIndex, iIndex)"
-                @focus="showDatabase(item)" 
-                class="w-full font-bold text-slate-800 text-base outline-none bg-transparent placeholder:text-slate-300" 
-                placeholder="Click to enter item or search database...">
-            
-            <div class="flex items-center mt-2 no-print bg-slate-100/50 w-fit px-2 py-1 rounded text-blue-500 text-[10px]">
-                <i class="fas fa-link mr-2"></i>
-                <input v-model="item.fileLink" class="w-64 outline-none bg-transparent font-medium" placeholder="OneDrive or Reference Link...">
+<template>
+  <table class="w-full border-collapse">
+    <tbody>
+      <tr
+        v-for="item in items"
+        :key="item.id"
+        class="group hover:bg-slate-50/50 transition-colors"
+      >
+        <!-- ITEM -->
+        <td class="px-8 py-6 align-top relative">
+          <div class="flex flex-col gap-2">
+
+            <!-- NAME INPUT -->
+            <input
+              v-model="item.name"
+              @input="onItemInput(item)"
+              @focus="item.showDropdown = true"
+              @blur="hideDropdown(item)"
+              class="w-full font-bold text-slate-800 outline-none bg-transparent"
+              placeholder="Click to enter item or search database..."
+            />
+
+            <!-- SEARCH DROPDOWN -->
+            <div
+              v-if="item.showDropdown && item.filtered.length"
+              class="absolute z-20 mt-10 w-[480px] bg-white border rounded-xl shadow-lg overflow-hidden"
+            >
+              <div
+                v-for="db in item.filtered"
+                :key="db.name"
+                @mousedown.prevent="selectFromDatabase(item, db)"
+                class="px-4 py-2 hover:bg-slate-100 cursor-pointer"
+              >
+                <div class="font-medium text-slate-800">{{ db.name }}</div>
+                <div class="text-xs text-slate-400">
+                  Cost: ${{ db.cost.toFixed(2) }} · Sell: ${{ db.sell.toFixed(2) }}
+                </div>
+              </div>
             </div>
 
-            <div class="attachment-grid">
-                <div v-for="(img, imgIdx) in item.images" :key="imgIdx" class="thumb-box shadow-sm">
-                    <img :src="img">
-                    <div @click="removeImage(item, imgIdx)" class="thumb-del no-print"><i class="fas fa-times"></i></div>
-                </div>
-                <div class="thumb-box flex items-center justify-center border-dashed border-2 cursor-pointer no-print hover:border-blue-400 text-slate-300" @click="$refs['file'+sIndex+iIndex][0].click()">
-                    <i class="fas fa-plus text-xs"></i>
-                    <input :ref="'file'+sIndex+iIndex" type="file" class="hidden" multiple @change="uploadImages($event, item)">
-                </div>
+            <!-- LINK -->
+            <div class="no-print flex items-center bg-slate-100/50 w-fit px-2 py-1 rounded text-blue-500 text-[10px]">
+              <i class="fas fa-link mr-2"></i>
+              <input
+                v-model.trim="item.fileLink"
+                class="w-64 outline-none bg-transparent font-medium"
+                placeholder="OneDrive or Reference Link..."
+              />
             </div>
-        </div>
-    </td>
-    
-    <td class="px-2 py-6 text-center">
-        <input type="number" v-model.number="item.qty" class="w-16 bg-white border border-slate-200 py-2 rounded-xl text-center font-bold text-sm outline-none shadow-sm focus:border-blue-400">
-    </td>
-    <td class="px-2 py-6 text-right">
-        <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm focus-within:border-blue-400">
-            <span class="text-slate-300 text-[10px] mr-1">$</span>
-            <input type="number" v-model.number="item.price" class="w-20 text-right outline-none font-bold text-slate-600 text-sm" step="0.01">
-        </div>
-    </td>
-    <td class="px-8 py-6 text-right">
-        <div class="flex items-center justify-end group/btn">
-            <span class="font-black text-slate-900 text-lg mr-4">${{ (item.qty * item.price).toFixed(2) }}</span>
-            <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" 
-                class="no-print w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                <i class="fas fa-times text-[10px]"></i>
+
+            <!-- IMAGES -->
+            <div class="flex gap-2 flex-wrap mt-2">
+              <ImageThumb
+                v-for="(img, i) in item.images"
+                :key="img"
+                :src="img"
+                @remove="item.images.splice(i, 1)"
+              />
+              <ImageUploader @upload="files => uploadImages(files, item)" />
+            </div>
+
+          </div>
+        </td>
+
+        <!-- QTY -->
+        <td class="px-2 py-6 text-center align-top">
+          <input
+            type="number"
+            min="0"
+            v-model.number.lazy="item.qty"
+            class="w-16 bg-white border py-2 rounded-xl text-center font-bold text-sm"
+          />
+        </td>
+
+        <!-- PRICE -->
+        <td class="px-2 py-6 text-right align-top">
+          <PriceInput v-model="item.price" />
+        </td>
+
+        <!-- TOTAL -->
+        <td class="px-8 py-6 text-right align-top">
+          <div class="flex items-center justify-end gap-4">
+            <span class="font-black text-lg">
+              {{ formatCurrency(item.qty * item.price) }}
+            </span>
+            <button
+              v-if="items.length > 1"
+              @click="removeItem(item.id)"
+              class="no-print w-6 h-6 rounded-full bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100"
+            >
+              <i class="fas fa-times text-[10px]"></i>
             </button>
-        </div>
-    </td>
-</tr>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</template>
+
+<script setup>
+import { ref, defineComponent } from 'vue'
+import database from './database.json'
+
+/* ---------------- DATA ---------------- */
+const items = ref([createItem()])
+
+function createItem () {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    qty: 1,
+    price: 0,
+    images: [],
+    fileLink: '',
+    showDropdown: false,
+    filtered: []
+  }
+}
+
+/* ---------------- DATABASE SEARCH ---------------- */
+const onItemInput = item => {
+  const q = item.name.toLowerCase()
+
+  item.filtered = database.filter(d =>
+    d.name.toLowerCase().includes(q)
+  )
+
+  item.showDropdown = true
+}
+
+const selectFromDatabase = (item, db) => {
+  item.name = db.name
+  item.price = db.sell
+  item.showDropdown = false
+}
+
+const hideDropdown = item => {
+  setTimeout(() => (item.showDropdown = false), 150)
+}
+
+/* ---------------- UTILS ---------------- */
+const formatCurrency = v => `$${v.toFixed(2)}`
+
+const removeItem = id => {
+  items.value = items.value.filter(i => i.id !== id)
+}
+
+const uploadImages = (files, item) => {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader()
+    reader.onload = e => item.images.push(e.target.result)
+    reader.readAsDataURL(file)
+  })
+}
+
+/* ---------------- COMPONENTS ---------------- */
+const ImageThumb = defineComponent({
+  props: { src: String },
+  emits: ['remove'],
+  template: `
+    <div class="w-16 h-16 relative rounded overflow-hidden shadow-sm">
+      <img :src="src" class="w-full h-full object-cover" />
+      <div
+        class="absolute top-1 right-1 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center cursor-pointer"
+        @click="$emit('remove')"
+      >
+        <i class="fas fa-times text-[8px]"></i>
+      </div>
+    </div>
+  `
+})
+
+const ImageUploader = defineComponent({
+  emits: ['upload'],
+  setup (_, { emit }) {
+    const input = ref(null)
+    return {
+      input,
+      open: () => input.value.click(),
+      change: e => emit('upload', e.target.files)
+    }
+  },
+  template: `
+    <div
+      class="w-16 h-16 flex items-center justify-center border-2 border-dashed rounded cursor-pointer text-slate-300 hover:border-blue-400"
+      @click="open"
+    >
+      <i class="fas fa-plus text-xs"></i>
+      <input ref="input" type="file" multiple class="hidden" @change="change" />
+    </div>
+  `
+})
+
+const PriceInput = defineComponent({
+  props: { modelValue: Number },
+  emits: ['update:modelValue'],
+  template: `
+    <div class="inline-flex items-center bg-white border rounded-xl px-3 py-2">
+      <span class="text-slate-300 text-[10px] mr-1">$</span>
+      <input
+        type="number"
+        step="0.01"
+        class="w-20 text-right outline-none font-bold text-sm"
+        :value="modelValue"
+        @input="$emit('update:modelValue', +$event.target.value)"
+      />
+    </div>
+  `
+})
+</script>
