@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Quote System</title>
+    <title>SignedOn | Quote System Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -96,49 +96,39 @@
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIdx) in section.items" :key="iIdx" class="group/row hover:bg-slate-50 transition">
                             <td class="py-3 pl-2 align-top">
-                                <input v-model="item.name" list="dbList" 
-                                    @input="logic.handleItemInput(item)" 
-                                    class="w-full font-bold text-slate-700 outline-none input-ghost placeholder-slate-300 mb-1" 
-                                    placeholder="Start typing item...">
-                                <textarea v-model="item.desc" rows="1" 
-                                    class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden placeholder-slate-200" 
-                                    placeholder="Details..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                                <input v-model="item.name" list="dbList" @input="logic.handleItemInput(item)" 
+                                    class="w-full font-bold text-slate-700 outline-none input-ghost placeholder-slate-300 mb-1" placeholder="Item Name">
+                                <textarea v-model="item.desc" rows="1" class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden" placeholder="Details..."></textarea>
                             </td>
                             <td class="py-3 align-top internal-col bg-yellow-50/30">
-                                <input type="number" v-model.number="item.cost" class="w-full text-right font-medium text-slate-500 bg-transparent outline-none">
+                                <input type="number" v-model.number="item.cost" @input="logic.updateFromCost(item)" class="w-full text-right font-medium text-slate-500 bg-transparent outline-none">
                             </td>
                             <td class="py-3 align-top internal-col bg-yellow-50/30">
-                                <input type="number" v-model.number="item.margin" class="w-full text-right font-medium text-green-600 bg-transparent outline-none">
+                                <input type="number" v-model.number="item.margin" @input="logic.updateFromCost(item)" class="w-full text-right font-medium text-green-600 bg-transparent outline-none">
                             </td>
                             <td class="py-3 align-top">
-                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-transparent rounded py-1 outline-none focus:bg-white">
+                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-transparent rounded py-1 outline-none">
                             </td>
                             <td class="py-3 align-top text-right">
                                 <div class="relative">
                                     <span class="absolute left-2 top-1 text-slate-300 text-xs">$</span>
-                                    <input type="number" v-model.number="item.manualPrice" step="0.01"
+                                    <input type="number" v-model.number="item.sell" @input="logic.updateFromSell(item)" step="0.01"
                                         class="w-full text-right font-bold text-slate-600 bg-transparent rounded py-1 pl-6 outline-none focus:bg-white focus:ring-1 ring-blue-200">
                                 </div>
                             </td>
                             <td class="py-3 text-right font-black text-slate-800 align-top pt-2">
-                                ${{ (item.qty * (item.manualPrice || 0)).toFixed(2) }}
+                                ${{ (item.qty * (item.sell || 0)).toFixed(2) }}
                             </td>
                             <td class="py-3 text-center align-top pt-2 no-print">
-                                <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-200 hover:text-red-500 transition opacity-0 group-hover/row:opacity-100">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-200 hover:text-red-500 transition opacity-0 group-hover/row:opacity-100"><i class="fas fa-times"></i></button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <button @click="actions.addItem(sIdx)" class="mt-2 text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase tracking-widest no-print flex items-center gap-1">
-                    <i class="fas fa-plus"></i> Add Line Item
-                </button>
+                <button @click="actions.addItem(sIdx)" class="mt-2 text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase no-print flex items-center gap-1"><i class="fas fa-plus"></i> Add Line Item</button>
             </div>
             <div class="flex justify-center py-8 no-print border-t border-dashed border-slate-200">
-                <button @click="actions.addSection" class="px-6 py-3 rounded-full border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-400 text-xs font-bold uppercase tracking-widest transition bg-white">
-                    Add New Page Section
-                </button>
+                <button @click="actions.addSection" class="px-6 py-3 rounded-full border border-slate-200 hover:border-blue-500 text-slate-400 text-xs font-bold transition bg-white">Add New Page Section</button>
             </div>
         </div>
 
@@ -153,16 +143,9 @@
                     </div>
                 </div>
                 <div class="w-64 space-y-3 text-right ml-auto">
-                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
-                        <span>Subtotal</span> <span class="text-slate-800">${{ totals.sell.toFixed(2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase pb-3 border-b border-slate-200">
-                        <span>GST (10%)</span> <span class="text-slate-800">${{ totals.gst.toFixed(2) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <span class="text-xs font-black text-slate-900 uppercase tracking-widest">Grand Total</span>
-                        <span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span>
-                    </div>
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase"><span>Subtotal</span> <span class="text-slate-800">${{ totals.sell.toFixed(2) }}</span></div>
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase pb-3 border-b border-slate-200"><span>GST (10%)</span> <span class="text-slate-800">${{ totals.gst.toFixed(2) }}</span></div>
+                    <div class="flex justify-between items-center pt-2"><span class="text-xs font-black text-slate-900 uppercase">Grand Total</span><span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span></div>
                 </div>
             </div>
         </footer>
@@ -185,14 +168,14 @@
 
             const quote = ref({
                 meta: { title: '', client: '' },
-                sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: 0 }] }]
+                sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }] }]
             });
 
             const loadDatabase = async () => {
                 try {
-                    const response = await fetch('database.json');
-                    if (response.ok) { config.repoDB = await response.json(); }
-                } catch (e) { console.error("DB failed"); }
+                    const res = await fetch('database.json');
+                    if (res.ok) config.repoDB = await res.json();
+                } catch (e) { console.error("DB Load Fail"); }
                 const local = localStorage.getItem('so_custom_db');
                 if (local) config.localDB = JSON.parse(local);
             };
@@ -207,23 +190,40 @@
             });
 
             const logic = {
+                // 联动 1：改变 Cost 或 Margin -> 更新 Sell
+                updateFromCost: (item) => {
+                    if (item.cost >= 0 && item.margin >= 0) {
+                        item.sell = parseFloat((item.cost * (1 + item.margin / 100)).toFixed(2));
+                    }
+                },
+                // 联动 2：改变 Sell -> 反推 Margin
+                updateFromSell: (item) => {
+                    if (item.sell > 0 && item.cost > 0) {
+                        item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
+                    } else if (item.sell > 0 && item.cost === 0) {
+                        item.margin = 100; // 如果成本为0，利润率计为100%
+                    }
+                },
                 handleItemInput: (item) => {
                     const match = db.combined.find(d => d.name === item.name);
                     if (match) {
-                        // 核心：直接查找并填入 sell 数字，完全跳过加价计算逻辑
-                        item.manualPrice = match.sell || 0; 
                         item.cost = match.cost || 0;
-                        item.margin = match.margin || (match.cost > 0 ? (((match.sell - match.cost)/match.sell)*100).toFixed(0) : 100);
-                        if (!item.desc) item.desc = "Standard specifications apply.";
+                        item.sell = match.sell || 0;
+                        // 匹配后自动补全 Margin
+                        if (item.cost > 0) {
+                            item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
+                        } else {
+                            item.margin = 100;
+                        }
                     }
                 }
             };
 
             const actions = {
-                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: 0 }),
+                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }),
                 removeItem: (s, i) => { if (quote.value.sections[s].items.length > 1) quote.value.sections[s].items.splice(i, 1); },
                 addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [] }),
-                removeSection: (i) => { if(confirm("Remove?")) quote.value.sections.splice(i, 1); },
+                removeSection: (i) => { if(confirm("Remove Section?")) quote.value.sections.splice(i, 1); },
                 exportQuote: () => {
                     const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: 'application/json' });
                     const a = document.createElement('a');
@@ -251,9 +251,8 @@
             const totals = computed(() => {
                 let cost = 0, sell = 0;
                 quote.value.sections.forEach(s => s.items.forEach(i => {
-                    const price = i.manualPrice || 0;
                     cost += (i.cost || 0) * i.qty;
-                    sell += price * i.qty;
+                    sell += (i.sell || 0) * i.qty;
                 }));
                 const profit = sell - cost;
                 return { cost, sell, profit, gst: sell * 0.1, grand: sell * 1.1, marginPercent: sell > 0 ? ((profit/sell)*100).toFixed(1) : 0 };
