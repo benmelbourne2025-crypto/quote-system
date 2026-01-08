@@ -11,14 +11,11 @@
         [v-cloak] { display: none !important; }
         @media print { 
             @page { size: A4; margin: 8mm 10mm; }
-            body { background: white !important; -webkit-print-color-adjust: exact; }
             .no-print { display: none !important; } 
-            .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
-            header { margin-bottom: 15px !important; padding: 12px !important; border: 1px solid #f1f5f9 !important; page-break-after: avoid; }
-            .section-block { page-break-inside: auto; margin-bottom: 15px !important; }
-            table { font-size: 10px !important; }
+            .page-container { width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            header { page-break-after: avoid; }
+            .section-block { page-break-inside: auto; margin-bottom: 10px !important; }
         }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -27,16 +24,10 @@
     <nav class="bg-slate-900 text-white p-2.5 sticky top-0 z-50 no-print shadow-xl">
         <div class="container mx-auto max-w-6xl flex justify-between items-center text-xs">
             <div class="flex items-center space-x-4">
-                <span class="text-lg font-bold italic tracking-tighter">signed<span class="text-pink-500">on</span></span>
-                <div class="flex space-x-2 border-l border-slate-700 pl-4">
-                    <button @click="exportJson" class="bg-blue-900/40 hover:bg-blue-800 px-3 py-1.5 rounded border border-blue-700/50 transition flex items-center font-bold">
-                        <i class="fas fa-file-export mr-2 text-blue-400"></i> Save As (.json)
-                    </button>
-                    <label class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded border border-slate-600 transition flex items-center cursor-pointer font-bold">
-                        <i class="fas fa-folder-open mr-2 text-yellow-400"></i> Open Backup
-                        <input type="file" class="hidden" @change="importJson" accept=".json">
-                    </label>
-                </div>
+                <span class="text-lg font-bold italic">signed<span class="text-pink-500">on</span></span>
+                <button @click="exportJson" class="bg-blue-900/40 px-3 py-1.5 rounded border border-blue-700/50 flex items-center font-bold">
+                    <i class="fas fa-file-export mr-2 text-blue-400"></i> Save As (.json)
+                </button>
             </div>
             <div class="flex items-center space-x-3">
                 <button @click="clearData" class="text-slate-400 hover:text-red-400 px-2 font-bold uppercase transition">Reset</button>
@@ -51,16 +42,16 @@
         <header class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div class="md:col-span-7">
-                    <label class="text-[9px] font-black text-blue-500 uppercase tracking-widest block mb-0.5">Project Name</label>
+                    <label class="text-[9px] font-black text-blue-500 uppercase block mb-0.5">Project Name</label>
                     <input v-model="quoteData.title" class="text-2xl font-black text-slate-800 w-full outline-none bg-transparent" placeholder="Enter Project Name..." @input="saveLocal">
                 </div>
                 <div class="md:col-span-3 border-l border-slate-100 pl-4">
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Prepared For</label>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Prepared For</label>
                     <input v-model="quoteData.client" class="text-sm font-bold text-slate-700 w-full outline-none bg-slate-50 px-3 py-1.5 rounded" placeholder="Client Name" @input="saveLocal">
                 </div>
-                <div class="md:col-span-2 text-right">
-                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Date</div>
-                    <div class="text-sm font-black text-slate-800">{{ currentDate }}</div>
+                <div class="md:col-span-2 text-right text-sm font-black text-slate-800">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Date</div>
+                    {{ currentDate }}
                 </div>
             </div>
         </header>
@@ -69,7 +60,7 @@
             <div class="flex items-center justify-between mb-2 no-print">
                 <div class="flex items-center space-x-2 font-black text-slate-800">
                     <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[10px]">{{ sIndex + 1 }}</span>
-                    <input v-model="section.title" class="outline-none bg-transparent" @input="saveLocal">
+                    <input v-model="section.title" class="outline-none bg-transparent">
                 </div>
             </div>
 
@@ -88,25 +79,23 @@
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex">
                             <td class="px-6 py-3">
                                 <input v-model="item.name" list="matList" 
-                                       @change="handleItemChange(sIndex, iIndex)" 
-                                       @keydown.enter="addItem(sIndex)"
-                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Search item..." @input="saveLocal">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Details..." @input="saveLocal">
+                                       @input="handleInput(sIndex, iIndex)" 
+                                       @change="autoFillPrice(sIndex, iIndex)"
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent" placeholder="Start typing to add line...">
+                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 mt-0.5 outline-none bg-transparent" placeholder="Optional details...">
                             </td>
-                            <td class="px-4 py-3"><input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none" @input="saveLocal"></td>
-                            <td class="px-4 py-3"><input type="number" v-model.number="item.price" class="w-full text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none" @input="saveLocal"></td>
+                            <td class="px-4 py-3 text-center"><input type="number" v-model.number="item.qty" class="w-16 text-center font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none"></td>
+                            <td class="px-4 py-3 text-right"><input type="number" v-model.number="item.price" class="w-24 text-right font-bold text-slate-600 bg-slate-50 rounded py-1 outline-none"></td>
                             <td class="px-6 py-3 text-right font-black text-slate-900">${{ (item.qty * item.price).toFixed(2) }}</td>
                             <td class="px-4 py-3 text-center no-print">
-                                <button @click="removeItem(sIndex, iIndex)" class="text-red-300 hover:text-red-600 transition-colors">
-                                    <i class="fas fa-minus-circle text-lg"></i>
-                                </button>
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-red-300 hover:text-red-500"><i class="fas fa-minus-circle"></i></button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 <div class="p-2 bg-slate-50/30 border-t border-slate-100 no-print flex justify-center">
-                    <button @click="addItem(sIndex)" class="text-[9px] font-black text-blue-600 hover:underline px-4 py-1 tracking-widest">
-                        <i class="fas fa-plus-circle mr-1"></i> ADD LINE
+                    <button @click="addItem(sIndex)" class="text-[9px] font-black text-blue-600 hover:underline tracking-widest uppercase">
+                        <i class="fas fa-plus-circle mr-1"></i> Add Line Item
                     </button>
                 </div>
             </div>
@@ -136,7 +125,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, watch } = Vue;
 
     createApp({
         setup() {
@@ -146,74 +135,53 @@
                 title: '', client: '',
                 sections: [{ id: Date.now(), title: 'Section 1', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
             };
-
             const quoteData = ref(initialData);
 
             onMounted(async () => {
-                const saved = localStorage.getItem('signedon_v6_draft');
+                const saved = localStorage.getItem('signedon_v7_draft');
                 if (saved) { try { quoteData.value = JSON.parse(saved); } catch (e) { quoteData.value = initialData; } }
                 try {
                     const res = await fetch('database.json');
                     if (res.ok) database.value = await res.json();
-                } catch (e) { console.warn("Database offline"); }
+                } catch (e) { console.warn("Database error"); }
             });
 
-            const saveLocal = () => localStorage.setItem('signedon_v6_draft', JSON.stringify(quoteData.value));
+            const saveLocal = () => localStorage.setItem('signedon_v7_draft', JSON.stringify(quoteData.value));
+            watch(quoteData, saveLocal, { deep: true });
 
-            // 处理物料选择并自动加行
-            const handleItemChange = (sIdx, iIdx) => {
-                const item = quoteData.value.sections[sIdx].items[iIdx];
-                const found = database.value.find(m => m.name === item.name);
-                if (found) { 
-                    item.price = found.sell; 
-                    item.details = found.name; 
-                }
-                // 核心逻辑：如果修改的是最后一行，且已经填写了内容，则自动加一行空行
-                if (iIdx === quoteData.value.sections[sIdx].items.length - 1 && item.name !== '') {
+            // 核心：处理输入并自动增行
+            const handleInput = (sIdx, iIdx) => {
+                const section = quoteData.value.sections[sIdx];
+                const item = section.items[iIdx];
+                // 如果当前输入的是最后一行且不为空，自动增加一个新行
+                if (iIdx === section.items.length - 1 && item.name.trim() !== '') {
                     addItem(sIdx);
                 }
-                saveLocal();
+            };
+
+            const autoFillPrice = (sIdx, iIdx) => {
+                const item = quoteData.value.sections[sIdx].items[iIdx];
+                const found = database.value.find(m => m.name === item.name);
+                if (found) { item.price = found.sell; item.details = found.name; }
             };
 
             const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (Number(i.qty) || 0) * (Number(i.price) || 0), 0), 0));
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
             
-            const addItem = (sIdx) => { quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }); saveLocal(); };
-            const removeItem = (sIdx, iIdx) => { if(quoteData.value.sections[sIdx].items.length > 1) quoteData.value.sections[sIdx].items.splice(iIdx, 1); saveLocal(); };
-            const addSection = () => { quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }); saveLocal(); };
-
+            const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 });
+            const removeItem = (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1);
+            const addSection = () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] });
+            const printQuote = () => window.print();
+            const clearData = () => { if(confirm("Reset?")) { quoteData.value = initialData; } };
             const exportJson = () => {
-                const fileName = `Quote_${quoteData.value.client || 'Project'}_${new Date().toISOString().slice(0,10)}.json`;
                 const blob = new Blob([JSON.stringify(quoteData.value, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                link.click();
-                URL.revokeObjectURL(url);
+                const a = document.createElement('a');
+                a.href = url; a.download = `Quote_${quoteData.value.client || 'file'}.json`; a.click();
             };
 
-            const importJson = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try { quoteData.value = JSON.parse(e.target.result); saveLocal(); } catch (err) { alert("Invalid file."); }
-                };
-                reader.readAsText(file);
-            };
-
-            const clearData = () => {
-                if(confirm("Confirm: Clear current?")) {
-                    quoteData.value = { title: '', client: '', sections: [{ id: Date.now(), title: 'Section 1', items: [{ name: '', details: '', qty: 1, price: 0 }] }] };
-                    saveLocal();
-                }
-            };
-            
-            const printQuote = () => window.print();
-
-            return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, handleItemChange, addSection, addItem, removeItem, printQuote, saveLocal, clearData, exportJson, importJson };
+            return { database, quoteData, currentDate, subTotal, gstAmount, grandTotal, handleInput, autoFillPrice, addSection, addItem, removeItem, printQuote, clearData, exportJson };
         }
     }).mount('#app');
 </script>
