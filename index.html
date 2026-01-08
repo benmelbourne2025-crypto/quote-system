@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Smart Quote Pro</title>
+    <title>SignedOn Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -17,7 +17,7 @@
             .print-only { display: block !important; }
             .edit-only { display: none !important; }
             body { background: white !important; padding: 0 !important; }
-            .card-box { border: 1px solid #f1f5f9 !important; box-shadow: none !important; break-inside: avoid; }
+            .card-box { border: 1px solid #f1f5f9 !important; box-shadow: none !important; }
         }
         .suggestion-box {
             position: absolute; z-index: 9999; width: 100%; background: white;
@@ -29,21 +29,23 @@
 <body class="bg-[#f8fafc] text-slate-800 pb-40">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-xl">
-        <div class="flex items-center space-x-5">
-            <span class="text-xl font-black italic tracking-tighter mr-2">signed<span class="text-blue-500">on</span></span>
+    <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-2xl">
+        <div class="flex items-center space-x-4">
+            <span class="text-xl font-black italic tracking-tighter mr-4">signed<span class="text-blue-500">on</span></span>
             
-            <button @click="exportJson" class="flex items-center font-bold uppercase tracking-widest hover:text-blue-400 text-[9px]">
-                <i class="fas fa-save mr-1.5 text-xs"></i> Save
-            </button>
-
-            <label class="flex items-center font-bold uppercase tracking-widest hover:text-yellow-400 cursor-pointer text-[9px]">
-                <i class="fas fa-folder-open mr-1.5 text-xs"></i> Open
+            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg flex items-center transition">
+                <i class="fas fa-folder-open mr-2 text-yellow-400"></i>
+                <span class="font-bold uppercase tracking-widest text-[10px]">Open File</span>
                 <input type="file" class="hidden" @change="importJson">
             </label>
+
+            <button @click="exportJson" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg flex items-center transition">
+                <i class="fas fa-save mr-2 text-blue-400"></i>
+                <span class="font-bold uppercase tracking-widest text-[10px]">Save JSON</span>
+            </button>
         </div>
         
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-1.5 rounded-lg font-black uppercase text-[9px] tracking-widest shadow-lg transition active:scale-95">
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">
             Generate PDF
         </button>
     </nav>
@@ -59,7 +61,7 @@
             <div class="w-[150px] shrink-0 text-right space-y-3">
                 <div>
                     <label class="text-[7px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
-                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-sm w-full outline-none bg-transparent" placeholder="Client Name">
+                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-sm w-full outline-none bg-transparent border-b border-slate-50 focus:border-blue-400" placeholder="Client Name">
                     <div class="print-only text-sm font-bold">{{ quoteData.client }}</div>
                 </div>
                 <div class="border-t border-slate-50 pt-2 space-y-0.5">
@@ -70,16 +72,16 @@
         </header>
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id">
-            <div class="flex items-center justify-between mb-3 px-2">
+            <div class="flex items-center justify-between mb-4 px-2">
                 <div class="flex items-center flex-1">
-                    <span class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[8px] font-black mr-3 no-print">{{ sIndex + 1 }}</span>
-                    <input v-model="section.title" class="edit-only font-black text-slate-800 text-lg outline-none bg-transparent w-full" placeholder="Section Name...">
-                    <div class="print-only font-black text-lg text-slate-800">{{ section.title }}</div>
+                    <span class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black mr-3 no-print">{{ sIndex + 1 }}</span>
+                    <input v-model="section.title" class="edit-only font-black text-slate-800 text-xl outline-none bg-transparent w-full" placeholder="Section Name...">
+                    <div class="print-only font-black text-xl text-slate-800">{{ section.title }}</div>
                 </div>
-                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-400 text-xs ml-4"><i class="fas fa-trash-alt"></i></button>
+                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
             </div>
 
-            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-visible card-box mb-8">
+            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-visible card-box mb-6">
                 <table class="w-full text-left table-fixed border-collapse">
                     <thead class="bg-[#1e293b] text-white text-[8px] font-black uppercase tracking-widest">
                         <tr>
@@ -94,24 +96,24 @@
                             <td class="px-6 py-4 overflow-visible">
                                 <div class="relative">
                                     <input v-model="item.name" @input="filterItems(sIndex, iIndex)" @focus="item.showSuggestions = true" @blur="hideSuggestions(item)"
-                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none bg-transparent" placeholder="Type item name...">
+                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none" placeholder="Start typing...">
                                     <div v-if="item.showSuggestions && filteredDbItems.length" class="suggestion-box">
                                         <div v-for="dbItem in filteredDbItems" @mousedown="selectItem(sIndex, iIndex, dbItem)" class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">
                                             <div class="font-bold text-xs">{{ dbItem.name }}</div>
-                                            <div class="text-[9px] text-slate-400 italic">{{ dbItem.details }}</div>
+                                            <div class="text-[9px] text-slate-400">{{ dbItem.details }}</div>
                                         </div>
                                     </div>
                                     <div class="print-only font-bold text-[12px]">{{ item.name }}</div>
                                 </div>
-                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1 bg-transparent" placeholder="Details...">
+                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1" placeholder="Details...">
                                 <div class="print-only text-[9px] text-slate-400 italic">{{ item.details }}</div>
                             </td>
                             <td class="px-2 py-4 text-center">
-                                <input type="number" v-model.number="item.qty" class="w-12 bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px] outline-none">
+                                <input type="number" v-model.number="item.qty" class="w-12 bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px]">
                             </td>
                             <td class="px-2 py-4 text-right">
-                                <input type="number" v-model.number="item.price" class="edit-only w-full text-right outline-none font-semibold text-slate-600 text-[11px] bg-transparent" step="0.01">
-                                <div class="print-only text-[11px] font-semibold">${{ item.price.toFixed(2) }}</div>
+                                <input type="number" v-model.number="item.price" class="edit-only w-full text-right outline-none font-semibold text-slate-600 text-[11px]" step="0.01">
+                                <div class="print-only text-[11px] font-semibold text-right">${{ item.price.toFixed(2) }}</div>
                             </td>
                             <td class="px-6 py-4 text-right font-black text-slate-900 text-[12px] relative">
                                 ${{ (item.qty * item.price).toFixed(2) }}
@@ -120,17 +122,17 @@
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-2 bg-slate-50/20 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 text-[8px] font-black text-blue-400 uppercase tracking-widest">+ Add Line Item</div>
+                <div @click="addItem(sIndex)" class="p-3 bg-slate-50/30 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-100 text-[9px] font-black text-blue-500 uppercase tracking-widest">+ Add Line Item</div>
             </div>
             
-            <button @click="addSection" class="no-print w-full border-2 border-dashed border-slate-200 rounded-2xl py-3 mb-10 text-slate-400 font-black text-[9px] uppercase tracking-[0.4em] hover:bg-blue-50 hover:border-blue-400 hover:text-blue-500 transition-all">
-                + Add New Section Below
+            <button @click="addSection" class="no-print w-full bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl py-4 mb-10 text-blue-500 font-black text-[10px] uppercase tracking-[0.4em] hover:bg-blue-100 hover:border-blue-400 transition-all shadow-sm">
+                <i class="fas fa-plus-circle mr-2"></i> Add New Section
             </button>
         </div>
 
         <div class="flex justify-end mt-10">
-            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right">
-                <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Grand Total (inc. GST)</div>
+            <div class="w-72 bg-blue-600 rounded-[2rem] p-8 text-white shadow-2xl text-right">
+                <div class="text-[9px] font-black uppercase tracking-widest opacity-70 mb-1">Grand Total (inc. GST)</div>
                 <div class="text-4xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
         </div>
@@ -139,8 +141,6 @@
 
 <script>
     const { createApp, ref, computed } = Vue;
-    
-    // 物品数据库
     const itemDatabase = [
         { name: "18 Gauge Speaker Cable - 100m", details: "High-performance OFC cable", price: 430.92 },
         { name: "3M - 3900 High Intensity Prismatic", details: "Reflective sheeting for signs", price: 102.00 },
@@ -171,12 +171,12 @@
             };
 
             const importJson = (e) => {
+                if (!e.target.files.length) return;
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     try {
-                        const data = JSON.parse(ev.target.result);
-                        quoteData.value = data;
-                    } catch (err) { alert("Invalid JSON File"); }
+                        quoteData.value = JSON.parse(ev.target.result);
+                    } catch (err) { alert("Invalid File"); }
                 };
                 reader.readAsText(e.target.files[0]);
             };
