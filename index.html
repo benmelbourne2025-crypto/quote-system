@@ -17,7 +17,7 @@
         .internal-col input { color: #64748b; font-size: 0.85em; }
         .internal-col input:focus { color: #0f172a; }
         
-        /* Project Title 自动换行与缩放样式 */
+        /* 页面显示的标题样式 */
         .auto-resize-title {
             font-size: clamp(24px, 4vw, 36px); 
             line-height: 1.2;
@@ -30,8 +30,17 @@
             font-weight: 900;
             text-transform: uppercase;
             display: block;
-            white-space: pre-wrap; /* 核心：保留换行符 */
-            word-wrap: break-word; /* 核心：长单词强制换行 */
+        }
+
+        /* 打印专用辅助样式：仅在打印时显示的文本层 */
+        .print-only-text {
+            display: none;
+            font-size: 28pt; /* 打印时的固定大字号 */
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.2;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
 
         @media print {
@@ -39,24 +48,19 @@
             #printable-area, #printable-area * { visibility: visible; }
             #printable-area { 
                 position: absolute; left: 0; top: 0; width: 100%; margin: 0; 
-                padding: 15mm 20mm !important; box-sizing: border-box !important; 
+                padding: 10mm 15mm !important; box-sizing: border-box !important; 
                 background: white; box-shadow: none !important; border: none !important; 
             }
             .no-print, .internal-col, nav, button { display: none !important; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
             
-            /* 打印时的输入框处理 */
-            input, textarea { border: none !important; resize: none !important; padding: 0 !important; background: transparent !important; }
+            /* 打印时隐藏 textarea，显示普通文本层以实现完美换行 */
+            .auto-resize-title { display: none !important; }
+            .print-only-text { display: block !important; visibility: visible !important; }
             
-            /* 确保 PDF 标题自动换行并撑开高度 */
-            .auto-resize-title { 
-                height: auto !important; 
-                overflow: visible !important; 
-                display: block !important;
-            }
-            header { height: auto !important; min-height: fit-content !important; }
-
+            header { height: auto !important; margin-bottom: 30px !important; }
+            input { border: none !important; background: transparent !important; padding: 0 !important; }
             table { width: 100% !important; }
         }
     </style>
@@ -95,6 +99,7 @@
         <header class="border-b border-slate-100 flex justify-between items-start pb-12 mb-10">
             <div class="w-2/3">
                 <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Title</label>
+                
                 <textarea 
                     v-model="quote.meta.title" 
                     class="auto-resize-title text-slate-900 placeholder-slate-200" 
@@ -102,6 +107,8 @@
                     rows="1"
                     oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                 ></textarea>
+
+                <div class="print-only-text text-slate-900">{{ quote.meta.title || 'UNTITLED PROJECT' }}</div>
             </div>
             <div class="w-1/3 text-right space-y-2">
                 <div>
