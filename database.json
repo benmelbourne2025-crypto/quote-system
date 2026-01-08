@@ -1,5 +1,6 @@
 [
-  { "name": "16 Gauge Speaker Cable - 100m", "cost": 359.10, "sell": 430.92 },
-  { "name": "Image Perfect IP 2609 Image Blaze", "cost": 50.00, "sell": 60.00 },
-  { "name": "3M 4941 GREY 20mm x 1.1mm x 33m", "cost": 3.80, "sell": 4.56 }
+  { "name": "18 Gauge Speaker Cable - 100m", "cost": 359.10, "sell": 430.92 },
+  { "name": "3M - 3900 High Intensity Prismatic", "cost": 85.00, "sell": 102.00 },
+  { "name": "Corflute - 3mm Image-Flute White", "cost": 10.31, "sell": 37.12 },
+  { "name": "3M 4941 GREY 20mm x 1.1mm", "cost": 3.80, "sell": 4.56 }
 ]
