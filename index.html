@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Pro Quote System</title>
+    <title>SignedOn | Quote System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -13,34 +13,49 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
         
-        /* 强制显示并美化 QTY 小箭头 */
-        .qty-input::-webkit-inner-spin-button, 
-        .qty-input::-webkit-outer-spin-button { 
-            opacity: 1 !important;
-            height: 24px;
-            width: 14px;
-            cursor: pointer;
-            display: block !important;
+        /* 核心修复：确保 Qty 容器不溢出，不遮挡 Description */
+        .qty-wrapper {
             position: relative;
+            width: 80px;
+            margin: 0 auto;
+            z-index: 10;
         }
 
         .qty-input {
-            background-color: #f1f5f9; /* 浅灰色背景让箭头更明显 */
+            width: 100%;
+            background-color: #f1f5f9;
             border: 1px solid #e2e8f0;
-            padding-right: 2px; /* 给箭头留出空间 */
+            padding: 8px 4px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        /* 强制显示箭头，但限制在输入框内部 */
+        .qty-input::-webkit-inner-spin-button, 
+        .qty-input::-webkit-outer-spin-button { 
+            opacity: 1 !important;
+            height: 20px;
+            cursor: pointer;
         }
 
         .qty-input:focus {
             background-color: #fff;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 修复 Description 点击区域 */
+        .desc-cell {
+            position: relative;
+            z-index: 5;
         }
 
         @media print { 
             .no-print { display: none !important; } 
             body { background: white !important; }
-            .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; }
             .qty-input::-webkit-inner-spin-button { display: none !important; }
             .qty-input { border: none !important; background: transparent !important; }
         }
@@ -49,109 +64,94 @@
 <body class="bg-[#f8fafc] min-h-screen text-slate-800 pb-24">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-50 no-print shadow-xl">
-        <div class="container mx-auto max-w-7xl flex justify-between items-center text-[10px]">
-            <div class="flex items-center space-x-6">
-                <span class="text-xl font-black italic tracking-tighter mr-2">signed<span class="text-blue-500">on</span></span>
-                <button @click="exportJson" class="hover:text-blue-400 transition font-bold uppercase tracking-widest"><i class="fas fa-save mr-2"></i> Save JSON</button>
-                <label class="hover:text-yellow-400 transition font-bold uppercase tracking-widest cursor-pointer">
-                    <i class="fas fa-folder-open mr-2"></i> Open File
-                    <input type="file" class="hidden" @change="importJson" accept=".json">
-                </label>
-            </div>
-            <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-8 py-2.5 rounded-lg font-black shadow-lg transition uppercase tracking-widest">
-                <i class="fas fa-print mr-2"></i> Generate PDF
-            </button>
+    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10">
+        <div class="flex items-center space-x-4 text-[10px]">
+            <span class="text-xl font-black italic tracking-tighter mr-4">signed<span class="text-blue-500">on</span></span>
+            <button @click="exportJson" class="hover:text-blue-400 uppercase font-bold tracking-widest transition">Save JSON</button>
+            <label class="hover:text-yellow-400 uppercase font-bold tracking-widest cursor-pointer transition">
+                Open File <input type="file" class="hidden" @change="importJson">
+            </label>
         </div>
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition shadow-lg">
+            Print PDF
+        </button>
     </nav>
 
-    <div class="container mx-auto max-w-5xl py-12 px-10 page-container">
-        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 overflow-hidden">
-            <div class="p-10">
-                <div class="flex justify-between items-start">
-                    <div class="w-1/2">
-                        <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] block mb-2">Project Name</label>
-                        <input v-model="quoteData.title" class="text-5xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter leading-[0.9]" placeholder="ENTER NAME...">
+    <div class="container mx-auto max-w-5xl py-12 px-10">
+        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10">
+            <div class="flex justify-between items-start">
+                <div class="w-1/2">
+                    <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-2 block">Project Name</label>
+                    <input v-model="quoteData.title" class="text-5xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter" placeholder="ENTER NAME...">
+                </div>
+
+                <div class="w-[300px] text-right space-y-6">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 block">Prepared For</label>
+                        <input v-model="quoteData.client" class="text-right font-black text-slate-900 text-2xl w-full outline-none bg-transparent" placeholder="Client Name">
+                        <input v-model="quoteData.contact" class="text-right font-semibold text-slate-400 text-[11px] w-full outline-none bg-transparent" placeholder="Company/Contact Info">
                     </div>
-
-                    <div class="w-[320px] flex flex-col space-y-5">
-                        <div class="text-right">
-                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Prepared For</label>
-                            <input v-model="quoteData.client" class="text-right font-black text-slate-900 text-2xl w-full outline-none bg-transparent placeholder-slate-200 leading-tight" placeholder="Client Name">
-                            <input v-model="quoteData.contact" class="text-right font-semibold text-slate-400 text-[11px] w-full outline-none bg-transparent mt-0.5" placeholder="Company or Contact Info">
-                        </div>
-
-                        <div class="border-t border-slate-100 pt-4 space-y-1.5">
-                            <div class="flex justify-between items-center text-[11px]">
-                                <span class="font-bold text-slate-400 uppercase tracking-tight">Issue Date</span>
-                                <span class="font-black text-slate-800">{{ currentDate }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-[11px]">
-                                <span class="font-bold text-blue-500 uppercase tracking-tight">Expiry Date</span>
-                                <span class="font-black text-blue-600">{{ expiryDate }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-[11px]">
-                                <span class="font-bold text-slate-400 uppercase tracking-tight">Quote Owner</span>
-                                <input v-model="quoteData.owner" class="text-right font-black text-slate-800 outline-none bg-transparent w-32 border-b border-transparent focus:border-blue-100" placeholder="Owner Name">
-                            </div>
-                        </div>
+                    <div class="border-t border-slate-100 pt-4 space-y-2 text-[11px]">
+                        <div class="flex justify-between font-bold"><span class="text-slate-400 uppercase">Issue Date</span><span class="text-slate-800">{{ currentDate }}</span></div>
+                        <div class="flex justify-between font-bold"><span class="text-blue-500 uppercase">Expiry Date</span><span class="text-blue-600">{{ expiryDate }}</span></div>
                     </div>
                 </div>
             </div>
         </header>
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10">
-            <div class="flex items-center space-x-3 mb-4 px-2">
-                <div class="bg-slate-900 text-white w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black">{{ sIndex + 1 }}</div>
-                <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400">
-            </div>
+            <h3 class="flex items-center space-x-3 mb-4 px-2">
+                <span class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{{ sIndex + 1 }}</span>
+                <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400 transition-all">
+            </h3>
 
-            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-[#1e293b] text-white">
-                        <tr class="text-[9px] font-black uppercase tracking-[0.2em]">
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
+                        <tr>
                             <th class="px-8 py-5">Item Description</th>
                             <th class="px-4 py-5 w-32 text-center">Qty</th>
-                            <th class="px-4 py-5 w-32 text-right">Price ($)</th>
+                            <th class="px-4 py-5 w-32 text-right">Unit Price ($)</th>
                             <th class="px-8 py-5 w-44 text-right">Sub Total</th>
                             <th class="px-4 py-5 w-10 no-print"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex">
-                            <td class="px-8 py-5">
-                                <input v-model="item.name" @input="handleRowLogic(sIndex, iIndex)" class="block w-full font-bold text-slate-800 outline-none bg-transparent text-[13px]" placeholder="Enter item name...">
-                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 outline-none bg-transparent italic mt-1" placeholder="Specifications...">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50 transition-colors">
+                            <td class="px-8 py-5 desc-cell">
+                                <input v-model="item.name" @input="handleRowLogic(sIndex, iIndex)" class="block w-full font-bold text-slate-800 outline-none bg-transparent text-[14px]" placeholder="Item name...">
+                                <input v-model="item.details" class="block w-full text-[10px] text-slate-400 outline-none bg-transparent italic mt-1" placeholder="Details/Specs...">
                             </td>
                             <td class="px-4 py-5">
-                                <div class="flex justify-center">
-                                    <input type="number" v-model.number="item.qty" 
-                                           class="qty-input w-24 text-center font-bold text-slate-800 py-2 rounded-lg text-sm">
+                                <div class="qty-wrapper">
+                                    <input type="number" v-model.number="item.qty" class="qty-input">
                                 </div>
                             </td>
                             <td class="px-4 py-5">
-                                <input type="number" v-model.number="item.price" step="0.01" class="w-full text-right font-bold text-slate-600 py-2 bg-transparent outline-none">
+                                <input type="number" v-model.number="item.price" step="0.01" class="w-full text-right font-bold text-slate-600 py-2 outline-none bg-transparent">
                             </td>
-                            <td class="px-8 py-5 text-right font-black text-slate-900 text-[13px]">
+                            <td class="px-8 py-5 text-right font-black text-slate-900 text-[14px]">
                                 ${{ (item.qty * item.price).toFixed(2) }}
                             </td>
                             <td class="px-4 py-5 text-center no-print">
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400"><i class="fas fa-times-circle"></i></button>
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400 transition-colors">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-4 bg-slate-50/50 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 transition-all text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                    + Add Line Item
-                </div>
+                <button @click="addItem(sIndex)" class="w-full p-4 bg-slate-50/50 border-t border-slate-50 no-print text-[9px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-50 transition-all">
+                    + Add New Line
+                </button>
             </div>
         </div>
 
-        <div class="flex justify-end pt-4 mb-20">
+        <div class="flex justify-end mt-12 mb-24">
             <div class="w-80 space-y-4">
                 <div class="px-4 space-y-2 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">
                     <div class="flex justify-between"><span>Sub Total (Ex. GST)</span><span class="text-slate-900">${{ subTotal.toFixed(2) }}</span></div>
-                    <div class="flex justify-between pb-2 border-b border-slate-100"><span>GST (10%)</span><span class="text-slate-900">${{ gstAmount.toFixed(2) }}</span></div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10%)</span><span class="text-slate-900">${{ gstAmount.toFixed(2) }}</span></div>
                 </div>
                 <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200 text-right">
                     <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Total Amount Due</div>
@@ -167,17 +167,16 @@
     createApp({
         setup() {
             const today = new Date();
-            const expiry = new Date();
-            expiry.setDate(today.getDate() + 30);
+            const expiry = new Date(); expiry.setDate(today.getDate() + 30);
             const formatDate = (date) => date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
             
             const quoteData = ref({
-                title: '', client: '', contact: '', owner: '',
+                title: '', client: '', contact: '',
                 sections: [{ id: Date.now(), title: 'Production Details', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
             });
 
             onMounted(() => {
-                const saved = localStorage.getItem('signedon_vFinal');
+                const saved = localStorage.getItem('signedon_fixed');
                 if (saved) quoteData.value = JSON.parse(saved);
             });
 
@@ -192,16 +191,14 @@
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_vFinal', JSON.stringify(val)), { deep: true });
+            watch(quoteData, (val) => localStorage.setItem('signedon_fixed', JSON.stringify(val)), { deep: true });
 
             return { 
                 quoteData, currentDate: ref(formatDate(today)), expiryDate: ref(formatDate(expiry)), 
                 subTotal, gstAmount, grandTotal, handleRowLogic,
                 addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
-                printQuote: () => window.print(),
-                exportJson: () => { /* ...同样逻辑... */ },
-                importJson: (e) => { /* ...同样逻辑... */ }
+                printQuote: () => window.print()
             };
         }
     }).mount('#app');
