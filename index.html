@@ -3,275 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OneDrive Quote Master</title>
+    <title>SignedOn | Enterprise Quote System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --brand-dark: #1e293b; --brand-blue: #0078D4; /* OneDrive Blue */ }
-        body { font-family: 'Inter', sans-serif; background: #f3f2f1; }
-        [v-cloak] { display: none; }
-
-        /* Office 风格卡片 */
-        .office-card {
-            background: white; border: 1px solid #e1dfdd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-        }
-        .office-card:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-
-        /* 打印优化 */
+        :root { --brand-dark: #0f172a; --brand-accent: #2563eb; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        [v-cloak] { display: none !important; }
+        
+        /* 屏幕交互样式 */
+        .input-ghost { transition: all 0.2s; border-bottom: 2px solid transparent; }
+        .input-ghost:focus { border-bottom-color: var(--brand-accent); background: #f8fafc; }
+        
+        /* ==========================================================================
+           [关键修复] Print CSS - 不改变逻辑，只强制浏览器行为
+           ========================================================================== */
         @media print {
-            @page { margin: 10mm; size: A4; }
-            body { background: white; -webkit-print-color-adjust: exact; }
-            .no-print, nav, .add-btn, .link-input-area { display: none !important; }
-            
-            /* 打印时，把链接变成可读的文字或者图标 */
-            .attachment-grid { display: block !important; }
-            .attachment-item { border: 1px solid #ddd; page-break-inside: avoid; margin-bottom: 5px; }
-            
-            input, textarea { border: none !important; background: transparent !important; resize: none; }
-            /* 隐藏内部成本 */
-            .internal-data { display: none !important; }
+            /* 1. 全局重置：强制白底黑字，强制显示背景色 */
+            body { 
+                background: white !important; 
+                color: black !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* 2. 隐藏无关元素：导航栏、按钮、滚动条 */
+            nav, button, .no-print, ::-webkit-scrollbar { 
+                display: none !important; 
+            }
+
+            /* 3. 核心修复：强制展开高度，允许分页 */
+            html, body, #app, main {
+                height: auto !important;
+                overflow: visible !important; /* 关键：允许内容溢出分页 */
+                width: 100% !important;
+                max-width: none !important;
+                position: static !important;
+            }
+
+            /* 4. 容器去样式：打印时不需要阴影和圆角 */
+            main {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 20px !important; /* 给纸张留白 */
+            }
+
+            /* 5. 分页控制：防止表格行被切成两半 */
+            .page-break { 
+                page-break-inside: avoid; 
+                break-inside: avoid;
+                margin-bottom: 20px;
+            }
+            tr, td { 
+                page-break-inside: avoid; 
+            }
+
+            /* 6. 输入框美化：打印时去掉背景灰框，像纯文本 */
+            input, textarea {
+                background-color: transparent !important;
+                border: none !important;
+                resize: none !important;
+                padding: 0 !important;
+            }
         }
     </style>
 </head>
-<body :class="{ 'client-view': viewMode === 'client' }">
+<body class="bg-slate-50 text-slate-800 pb-32">
 
-<div id="app" v-cloak class="pb-32">
-    <nav class="bg-[#0078D4] text-white sticky top-0 z-50 shadow-md no-print">
-        <div class="max-w-7xl mx-auto px-4 h-14 flex justify-between items-center text-sm">
-            <div class="flex items-center gap-4">
-                <div class="grid grid-cols-3 gap-0.5 w-4 h-4 mr-2">
-                    <div class="bg-white w-1 h-1" v-for="n in 9"></div>
-                </div>
-                <span class="text-lg font-bold tracking-tight">Team Quote <span class="font-light opacity-80">for OneDrive</span></span>
+<div id="app" v-cloak>
+    <nav class="bg-slate-900 text-white sticky top-0 z-50 shadow-xl no-print border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex justify-between items-center text-xs">
+            <div class="flex items-center space-x-6">
+                <span class="text-lg font-black tracking-tighter italic">SIGNED<span class="text-blue-500">ON</span></span>
                 
-                <div class="bg-[#005a9e] p-1 rounded flex text-xs font-bold ml-6">
-                    <button @click="viewMode = 'internal'" :class="{'bg-white text-[#0078D4]': viewMode === 'internal', 'text-blue-100': viewMode !== 'internal'}" class="px-3 py-1 rounded transition">
-                        INTERNAL
+                <div class="flex space-x-2 border-l border-slate-700 pl-6">
+                    <button @click="actions.exportQuote" class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2">
+                        <i class="fas fa-download text-blue-400"></i> Save Quote (.json)
                     </button>
-                    <button @click="viewMode = 'client'" :class="{'bg-white text-[#0078D4]': viewMode === 'client', 'text-blue-100': viewMode !== 'client'}" class="px-3 py-1 rounded transition">
-                        CLIENT PDF
-                    </button>
+                    <label class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-folder-open text-yellow-400"></i> Load Quote
+                        <input type="file" class="hidden" @change="actions.importQuote" accept=".json">
+                    </label>
                 </div>
             </div>
 
-            <div class="flex gap-2 font-semibold">
-                <button @click="actions.saveData" class="hover:bg-[#005a9e] px-3 py-1.5 rounded flex gap-2 items-center transition">
-                    <i class="far fa-save"></i> Save JSON
+            <div class="flex items-center space-x-4">
+                <button @click="actions.downloadMasterDB" class="text-slate-400 hover:text-green-400 transition flex items-center gap-2" title="Download updated DB to upload to GitHub">
+                    <i class="fas fa-database"></i> Export Master DB
                 </button>
-                <label class="hover:bg-[#005a9e] px-3 py-1.5 rounded flex gap-2 items-center cursor-pointer transition">
-                    <i class="far fa-folder-open"></i> Open JSON
-                    <input type="file" @change="actions.loadData" class="hidden" accept=".json">
-                </label>
-                <button @click="actions.print" class="bg-white text-[#0078D4] hover:bg-slate-100 px-4 py-1.5 rounded flex gap-2 items-center shadow transition ml-4">
-                    <i class="fas fa-print"></i> Export PDF
+                <div class="h-4 w-px bg-slate-700"></div>
+                <button @click="actions.reset" class="text-slate-400 hover:text-red-400 transition font-bold">RESET</button>
+                <button @click="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold shadow-lg transition flex items-center gap-2">
+                    <i class="fas fa-print"></i> PDF / PRINT
                 </button>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto mt-8 bg-white min-h-[1100px] shadow-xl rounded-sm overflow-hidden print:shadow-none print:mt-0">
+    <main class="max-w-5xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl overflow-visible print:shadow-none print:rounded-none">
         
-        <header class="p-10 border-b border-slate-100 flex justify-between">
-            <div class="w-2/3 space-y-4">
-                <input v-model="project.title" class="text-3xl font-bold w-full outline-none placeholder-slate-300 text-slate-800" placeholder="Project / Quote Title">
-                <div class="grid grid-cols-2 gap-4 max-w-md">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Client</label>
-                        <input v-model="project.client" class="block w-full text-sm font-bold text-slate-700 outline-none border-b border-transparent focus:border-blue-500 bg-slate-50 px-2 py-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Reference</label>
-                        <input v-model="project.ref" class="block w-full text-sm font-bold text-slate-700 outline-none border-b border-transparent focus:border-blue-500 bg-slate-50 px-2 py-1">
-                    </div>
-                </div>
+        <header class="p-12 border-b border-slate-100 flex justify-between items-end">
+            <div class="w-2/3">
+                <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Title</label>
+                <input v-model="quote.meta.title" class="w-full text-4xl font-black text-slate-900 outline-none placeholder-slate-200 uppercase" placeholder="UNTITLED PROJECT">
             </div>
-            <div class="w-1/3 text-right">
-                <div class="text-xs text-slate-400">Date: {{ currentDate }}</div>
-                <div class="mt-2 text-4xl text-[#0078D4]"><i class="fab fa-microsoft"></i></div>
+            <div class="w-1/3 text-right space-y-2">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prepared For</label>
+                    <input v-model="quote.meta.client" class="w-full text-right font-bold text-slate-700 outline-none placeholder-slate-300 bg-slate-50 focus:bg-white p-1 rounded" placeholder="Client Name">
+                </div>
+                <div class="text-xs text-slate-400 font-medium">
+                    Date: <span class="text-slate-800 font-bold">{{ config.currentDate }}</span>
+                </div>
             </div>
         </header>
 
-        <div class="p-10">
-            <div v-for="(section, sIdx) in project.sections" :key="section.id" class="mb-12 page-break">
-                <div class="flex items-center gap-3 mb-6 border-b-2 border-slate-100 pb-2">
-                    <div class="bg-slate-800 text-white w-6 h-6 rounded flex items-center justify-center font-bold text-xs">{{ sIdx + 1 }}</div>
-                    <input v-model="section.title" class="text-xl font-bold text-slate-800 w-full outline-none bg-transparent" placeholder="Section Name">
-                    <button @click="actions.removeSection(sIdx)" class="no-print text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+        <div class="p-12 space-y-10">
+            <div v-for="(section, sIdx) in quote.sections" :key="section.id" class="page-break group/section">
+                <div class="flex items-center gap-4 mb-4 border-b-2 border-slate-100 pb-2">
+                    <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-bold">{{ sIdx + 1 }}</div>
+                    <input v-model="section.title" class="text-xl font-bold text-slate-800 outline-none w-full bg-transparent" placeholder="Section Name">
+                    <button @click="actions.removeSection(sIdx)" class="no-print opacity-0 group-hover/section:opacity-100 text-slate-300 hover:text-red-500 transition px-2">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </div>
 
-                <div class="space-y-6">
-                    <div v-for="(item, iIdx) in section.items" :key="iIdx" class="bg-white group/item relative border-b border-slate-50 pb-6">
-                        
-                        <div class="flex gap-6">
-                            <div class="flex-grow space-y-2">
-                                <div class="flex justify-between">
-                                    <input v-model="item.name" class="text-lg font-bold text-slate-800 w-full outline-none placeholder-slate-300" placeholder="Item Name">
-                                    <button @click="actions.removeItem(sIdx, iIdx)" class="no-print text-slate-200 hover:text-red-500 opacity-0 group-hover/item:opacity-100"><i class="fas fa-times"></i></button>
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b border-slate-100">
+                            <th class="pb-3 pl-2 w-1/2">Description / Specification</th>
+                            <th class="pb-3 text-center w-20">Qty</th>
+                            <th class="pb-3 text-right w-32">Unit Price</th>
+                            <th class="pb-3 text-right w-32">Total</th>
+                            <th class="pb-3 w-8 no-print"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr v-for="(item, iIdx) in section.items" :key="iIdx" class="group/row hover:bg-slate-50 transition">
+                            <td class="py-3 pl-2 align-top">
+                                <input v-model="item.name" list="dbList" 
+                                    @input="logic.handleItemInput(item)" 
+                                    @change="logic.learnItem(item)"
+                                    class="w-full font-bold text-slate-700 outline-none bg-transparent placeholder-slate-300 mb-1" 
+                                    placeholder="Start typing item name...">
+                                <textarea v-model="item.desc" rows="1" 
+                                    class="w-full text-xs text-slate-400 outline-none bg-transparent resize-none overflow-hidden placeholder-slate-200" 
+                                    placeholder="Additional details..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                            </td>
+                            
+                            <td class="py-3 align-top">
+                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 bg-slate-100/50 rounded py-1 outline-none focus:bg-white focus:ring-2 ring-blue-100">
+                            </td>
+                            
+                            <td class="py-3 align-top">
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1 text-slate-300 text-xs">$</span>
+                                    <input type="number" v-model.number="item.price" step="0.01" 
+                                        @change="logic.learnItem(item)"
+                                        class="w-full text-right font-bold text-slate-600 bg-slate-100/50 rounded py-1 pl-6 outline-none focus:bg-white focus:ring-2 ring-blue-100">
                                 </div>
-                                <textarea v-model="item.desc" rows="2" class="w-full text-sm text-slate-500 outline-none resize-none bg-transparent" placeholder="Description..."></textarea>
+                            </td>
+                            
+                            <td class="py-3 text-right font-black text-slate-800 align-top pt-2">
+                                ${{ (item.qty * item.price).toFixed(2) }}
+                            </td>
 
-                                <div class="mt-4">
-                                    <div class="link-input-area flex gap-2 items-center mb-3 no-print">
-                                        <div class="relative w-full">
-                                            <i class="fas fa-link absolute left-3 top-2.5 text-slate-300 text-xs"></i>
-                                            <input type="text" v-model="item.tempLink" @keydown.enter="actions.addLink(item)" 
-                                                class="w-full bg-slate-50 border border-slate-200 rounded px-8 py-2 text-xs outline-none focus:border-[#0078D4]" 
-                                                placeholder="Paste OneDrive Share Link here and press Enter...">
-                                        </div>
-                                    </div>
-
-                                    <div class="attachment-grid grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <div v-for="(link, lIdx) in item.links" :key="lIdx" 
-                                             class="attachment-item office-card rounded p-2 flex items-center gap-3 cursor-pointer group/link"
-                                             @click="window.open(link.url, '_blank')">
-                                            
-                                            <div class="w-8 h-8 flex items-center justify-center rounded bg-slate-100 text-slate-500 flex-shrink-0">
-                                                <i :class="actions.getIcon(link.url)"></i>
-                                            </div>
-                                            
-                                            <div class="flex-grow overflow-hidden">
-                                                <div class="text-[10px] font-bold text-[#0078D4] truncate uppercase tracking-wider">OneDrive Link</div>
-                                                <div class="text-xs text-slate-600 truncate underline decoration-dotted">{{ link.url }}</div>
-                                            </div>
-                                            
-                                            <button @click.stop="item.links.splice(lIdx, 1)" class="no-print text-slate-300 hover:text-red-500 p-1"><i class="fas fa-times"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="w-56 flex-shrink-0">
-                                <div class="bg-slate-50 rounded p-3 border border-slate-200">
-                                    <div class="internal-data space-y-1 mb-2 border-b border-slate-200 pb-2">
-                                        <div class="flex justify-between items-center">
-                                            <label class="text-[10px] font-bold text-slate-400">COST</label>
-                                            <input type="number" v-model.number="item.cost" class="w-16 text-right text-xs bg-white border rounded px-1 outline-none">
-                                        </div>
-                                        <div class="flex justify-between items-center">
-                                            <label class="text-[10px] font-bold text-slate-400">MARGIN %</label>
-                                            <input type="number" v-model.number="item.margin" class="w-12 text-right text-xs bg-white border rounded px-1 outline-none text-green-600">
-                                        </div>
-                                        <div class="flex justify-between items-center">
-                                            <label class="text-[10px] font-bold text-slate-400">QTY</label>
-                                            <input type="number" v-model.number="item.qty" class="w-12 text-right text-xs bg-white border rounded px-1 outline-none">
-                                        </div>
-                                    </div>
-
-                                    <div class="text-right">
-                                        <div class="text-[10px] font-bold text-slate-400 uppercase">Unit Price</div>
-                                        <div class="text-base font-black text-slate-800">${{ (item.cost * (1 + item.margin/100)).toFixed(2) }}</div>
-                                        <div class="text-[10px] text-slate-400 mt-1">
-                                            Sub: <span class="font-bold text-slate-900">${{ ((item.cost * (1 + item.margin/100)) * item.qty).toFixed(2) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button @click="actions.addItem(sIdx)" class="no-print mt-4 w-full py-2 border border-dashed border-slate-300 rounded text-xs font-bold text-slate-400 hover:border-[#0078D4] hover:text-[#0078D4] transition">
-                    + Add Item
+                            <td class="py-3 text-center align-top pt-2 no-print">
+                                <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-200 hover:text-red-500 transition opacity-0 group-hover/row:opacity-100">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <button @click="actions.addItem(sIdx)" class="mt-2 text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase tracking-widest no-print flex items-center gap-1">
+                    <i class="fas fa-plus"></i> Add Line Item
                 </button>
             </div>
-            
-            <button @click="actions.addSection" class="no-print mx-auto block px-6 py-2 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-700 shadow-lg">
-                + Add Section
-            </button>
+
+            <div class="flex justify-center py-8 no-print border-t border-dashed border-slate-200">
+                <button @click="actions.addSection" class="group px-6 py-3 rounded-full border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-400 text-xs font-bold uppercase tracking-widest transition bg-white">
+                    Add New Page Section
+                </button>
+            </div>
         </div>
 
-        <footer class="bg-slate-50 p-10 border-t border-slate-200 page-break">
-            <div class="flex justify-between items-end">
-                <div class="internal-data bg-yellow-50 border border-yellow-200 rounded p-3">
-                    <div class="text-[10px] font-bold text-yellow-700 uppercase mb-1">Internal Profitability</div>
-                    <div class="text-xs text-yellow-900 w-32 flex justify-between"><span>Cost:</span> <span>${{ totals.cost.toFixed(2) }}</span></div>
-                    <div class="text-xs text-green-700 font-bold w-32 flex justify-between"><span>Profit:</span> <span>${{ totals.profit.toFixed(2) }}</span></div>
-                </div>
-                
-                <div class="text-right w-64 space-y-1">
-                    <div class="flex justify-between text-sm font-bold text-slate-500"><span>Subtotal</span> <span>${{ totals.sell.toFixed(2) }}</span></div>
-                    <div class="flex justify-between text-sm font-bold text-slate-500 border-b border-slate-200 pb-2"><span>GST (10%)</span> <span>${{ (totals.sell * 0.1).toFixed(2) }}</span></div>
+        <footer class="bg-slate-50 p-12 border-t border-slate-200 page-break">
+            <div class="flex justify-end">
+                <div class="w-64 space-y-3">
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+                        <span>Subtotal</span>
+                        <span class="text-slate-800">${{ totals.sub.toFixed(2) }}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase pb-3 border-b border-slate-200">
+                        <span>GST (10%)</span>
+                        <span class="text-slate-800">${{ totals.gst.toFixed(2) }}</span>
+                    </div>
                     <div class="flex justify-between items-center pt-2">
-                        <span class="text-sm font-black text-slate-900 uppercase">Total AUD</span>
-                        <span class="text-2xl font-black text-[#0078D4]">${{ (totals.sell * 1.1).toFixed(2) }}</span>
+                        <span class="text-xs font-black text-slate-900 uppercase tracking-widest">Total AUD</span>
+                        <span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span>
                     </div>
                 </div>
             </div>
         </footer>
     </main>
+
+    <datalist id="dbList">
+        <option v-for="item in db.combined" :value="item.name">{{ item.name }} - ${{ item.sell }}</option>
+    </datalist>
 </div>
 
 <script>
-    const { createApp, ref, computed, reactive } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
     createApp({
         setup() {
-            const viewMode = ref('internal');
-            const currentDate = new Date().toLocaleDateString('en-AU');
-            
-            const project = ref({
-                title: '', client: '', ref: '',
-                sections: [{ id: 1, title: 'Scope', items: [{ name: '', desc: '', cost: 0, margin: 30, qty: 1, links: [], tempLink: '' }] }]
+            // --- State Management ---
+            const config = reactive({
+                currentDate: new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
+                repoDB: [],    // 来自 database.json
+                localDB: []    // 来自 localStorage (新学习的项目)
             });
 
-            const totals = computed(() => {
-                let cost = 0, sell = 0;
-                project.value.sections.forEach(s => s.items.forEach(i => {
-                    const price = i.cost * (1 + i.margin/100);
-                    cost += i.cost * i.qty;
-                    sell += price * i.qty;
-                }));
-                return { cost, sell, profit: sell - cost };
+            const quote = ref({
+                meta: { title: '', client: '' },
+                sections: [
+                    { id: 1, title: 'Production Scope', items: [{ name: '', desc: '', qty: 1, price: 0 }] }
+                ]
             });
 
-            const actions = {
-                addSection: () => project.value.sections.push({ id: Date.now(), title: '', items: [] }),
-                removeSection: (i) => { if(confirm('Delete?')) project.value.sections.splice(i, 1); },
-                addItem: (sIdx) => project.value.sections[sIdx].items.push({ name: '', desc: '', cost: 0, margin: 30, qty: 1, links: [], tempLink: '' }),
-                removeItem: (s, i) => project.value.sections[s].items.splice(i, 1),
-                
-                // 核心：添加链接
-                addLink: (item) => {
-                    if (!item.tempLink) return;
-                    item.links.push({ url: item.tempLink, type: 'link' });
-                    item.tempLink = ''; // Clear input
-                },
+            // --- Database Logic ---
+            const loadDatabase = async () => {
+                // 1. Load Repo DB
+                try {
+                    const res = await fetch('database.json');
+                    if (res.ok) config.repoDB = await res.json();
+                } catch (e) { console.error("DB Load Error", e); }
 
-                // 智能图标判断
-                getIcon: (url) => {
-                    const u = url.toLowerCase();
-                    if (u.includes('.pdf')) return 'fas fa-file-pdf text-red-500';
-                    if (u.includes('.xls') || u.includes('spreadsheet')) return 'fas fa-file-excel text-green-600';
-                    if (u.includes('.doc') || u.includes('document')) return 'fas fa-file-word text-blue-600';
-                    if (u.includes('.jpg') || u.includes('.png') || u.includes('photo')) return 'fas fa-file-image text-purple-600';
-                    return 'fas fa-link text-slate-400';
-                },
+                // 2. Load Local Overrides
+                const local = localStorage.getItem('so_custom_db');
+                if (local) config.localDB = JSON.parse(local);
+            };
 
-                saveData: () => {
-                    const blob = new Blob([JSON.stringify(project.value)], { type: "application/json" });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `Quote_${project.value.title || 'New'}.json`;
-                    a.click();
+            // Unified Database
+            const db = reactive({
+                combined: computed(() => {
+                    const map = new Map();
+                    config.repoDB.forEach(i => map.set(i.name, i));
+                    config.localDB.forEach(i => map.set(i.name, i));
+                    return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
+                })
+            });
+
+            // --- Core Logic ---
+            const logic = {
+                handleItemInput: (item) => {
+                    const match = db.combined.find(d => d.name === item.name);
+                    if (match) {
+                        item.price = match.sell || match.price || 0;
+                        if (!item.desc) item.desc = "Standard specifications apply."; 
+                    }
                 },
-                loadData: (e) => {
-                    const r = new FileReader();
-                    r.onload = (ev) => project.value = JSON.parse(ev.target.result);
-                    r.readAsText(e.target.files[0]);
-                },
-                print: () => {
-                    if(confirm("Hide internal costs for Client PDF?")) {
-                        viewMode.value = 'client';
-                        setTimeout(() => window.print(), 100);
-                    } else window.print();
+                learnItem: (item) => {
+                    if (!item.name || item.price <= 0) return;
+                    const inRepo = config.repoDB.find(d => d.name === item.name && d.sell === item.price);
+                    if (inRepo) return;
+                    const idx = config.localDB.findIndex(d => d.name === item.name);
+                    if (idx > -1) { config.localDB[idx].sell = item.price; } 
+                    else { config.localDB.push({ name: item.name, sell: item.price, cost: 0 }); }
+                    localStorage.setItem('so_custom_db', JSON.stringify(config.localDB));
                 }
             };
 
-            return { viewMode, currentDate, project, totals, actions };
+            // --- Actions ---
+            const actions = {
+                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, price: 0 }),
+                removeItem: (sIdx, iIdx) => {
+                    if (quote.value.sections[sIdx].items.length > 1) {
+                        quote.value.sections[sIdx].items.splice(iIdx, 1);
+                    } else {
+                        quote.value.sections[sIdx].items[0] = { name: '', desc: '', qty: 1, price: 0 };
+                    }
+                },
+                addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', desc: '', qty: 1, price: 0 }] }),
+                removeSection: (sIdx) => { if(confirm("Remove section?")) quote.value.sections.splice(sIdx, 1); },
+                
+                exportQuote: () => {
+                    const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: 'application/json' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `Quote_${quote.value.meta.title || 'Draft'}.json`;
+                    a.click();
+                },
+                importQuote: (e) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => quote.value = JSON.parse(ev.target.result);
+                    reader.readAsText(e.target.files[0]);
+                },
+                
+                downloadMasterDB: () => {
+                    const masterList = db.combined.map(i => ({
+                        name: i.name,
+                        cost: i.cost || 0,
+                        sell: i.sell || i.price || 0
+                    }));
+                    const blob = new Blob([JSON.stringify(masterList, null, 2)], { type: 'application/json' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'database.json'; 
+                    a.click();
+                    alert("Export Complete: Upload this 'database.json' to GitHub to update the team.");
+                },
+
+                reset: () => {
+                    if(confirm("Reset all data?")) {
+                        localStorage.removeItem('so_current_quote');
+                        location.reload();
+                    }
+                }
+            };
+
+            const totals = computed(() => {
+                let sub = 0;
+                quote.value.sections.forEach(sec => {
+                    sec.items.forEach(item => sub += (item.qty * item.price));
+                });
+                return { sub, gst: sub * 0.1, grand: sub * 1.1 };
+            });
+
+            onMounted(() => {
+                loadDatabase();
+                const saved = localStorage.getItem('so_current_quote');
+                if (saved) quote.value = JSON.parse(saved);
+            });
+            
+            watch(quote, (val) => localStorage.setItem('so_current_quote', JSON.stringify(val)), { deep: true });
+
+            return { config, quote, db, logic, actions, totals };
         }
     }).mount('#app');
 </script>
