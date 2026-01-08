@@ -17,9 +17,8 @@
         .internal-col input { color: #64748b; font-size: 0.85em; }
         .internal-col input:focus { color: #0f172a; }
         
-        /* 针对 Project Title 的优化样式 */
+        /* Project Title 自动换行与缩放样式 */
         .auto-resize-title {
-            /* 自动缩放字体：在 24px 到 36px 之间根据屏幕宽度调整 */
             font-size: clamp(24px, 4vw, 36px); 
             line-height: 1.2;
             width: 100%;
@@ -31,19 +30,34 @@
             font-weight: 900;
             text-transform: uppercase;
             display: block;
+            white-space: pre-wrap; /* 核心：保留换行符 */
+            word-wrap: break-word; /* 核心：长单词强制换行 */
         }
 
         @media print {
             body * { visibility: hidden; }
             #printable-area, #printable-area * { visibility: visible; }
-            #printable-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 15mm 20mm !important; box-sizing: border-box !important; background: white; box-shadow: none !important; border: none !important; }
+            #printable-area { 
+                position: absolute; left: 0; top: 0; width: 100%; margin: 0; 
+                padding: 15mm 20mm !important; box-sizing: border-box !important; 
+                background: white; box-shadow: none !important; border: none !important; 
+            }
             .no-print, .internal-col, nav, button { display: none !important; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
-            input, textarea { border: none !important; resize: none !important; padding: 0 !important; }
+            
+            /* 打印时的输入框处理 */
+            input, textarea { border: none !important; resize: none !important; padding: 0 !important; background: transparent !important; }
+            
+            /* 确保 PDF 标题自动换行并撑开高度 */
+            .auto-resize-title { 
+                height: auto !important; 
+                overflow: visible !important; 
+                display: block !important;
+            }
+            header { height: auto !important; min-height: fit-content !important; }
+
             table { width: 100% !important; }
-            /* 确保打印时标题高度自动 */
-            .auto-resize-title { height: auto !important; }
         }
     </style>
 </head>
