@@ -17,10 +17,10 @@
         .internal-col input { color: #64748b; font-size: 0.85em; }
         .internal-col input:focus { color: #0f172a; }
         
-        /* 页面显示的标题样式 */
+        /* 1. 网页编辑状态的标题样式 */
         .auto-resize-title {
             font-size: clamp(24px, 4vw, 36px); 
-            line-height: 1.2;
+            line-height: 1.1;
             width: 100%;
             resize: none;
             overflow: hidden;
@@ -32,15 +32,15 @@
             display: block;
         }
 
-        /* 打印专用辅助样式：仅在打印时显示的文本层 */
-        .print-only-text {
+        /* 2. 打印专用文本层（默认隐藏） */
+        .print-title-display {
             display: none;
-            font-size: 28pt; /* 打印时的固定大字号 */
+            font-size: 26pt; /* 打印时的精准字号 */
             font-weight: 900;
             text-transform: uppercase;
-            line-height: 1.2;
-            word-wrap: break-word;
-            white-space: pre-wrap;
+            line-height: 1.1;
+            word-break: break-word;
+            white-space: pre-wrap; /* 允许自然换行 */
         }
 
         @media print {
@@ -55,13 +55,17 @@
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
             
-            /* 打印时隐藏 textarea，显示普通文本层以实现完美换行 */
+            /* 3. 打印时核心切换：隐藏输入框，显示纯文本 DIV */
             .auto-resize-title { display: none !important; }
-            .print-only-text { display: block !important; visibility: visible !important; }
+            .print-title-display { 
+                display: block !important; 
+                visibility: visible !important;
+                width: 100% !important;
+            }
             
-            header { height: auto !important; margin-bottom: 30px !important; }
-            input { border: none !important; background: transparent !important; padding: 0 !important; }
-            table { width: 100% !important; }
+            header { border-bottom: 1px solid #e2e8f0 !important; height: auto !important; }
+            input { border: none !important; background: transparent !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
         }
     </style>
 </head>
@@ -105,10 +109,12 @@
                     class="auto-resize-title text-slate-900 placeholder-slate-200" 
                     placeholder="UNTITLED PROJECT"
                     rows="1"
-                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                    @input="e => { e.target.style.height = ''; e.target.style.height = e.target.scrollHeight + 'px' }"
                 ></textarea>
 
-                <div class="print-only-text text-slate-900">{{ quote.meta.title || 'UNTITLED PROJECT' }}</div>
+                <div class="print-title-display text-slate-900">
+                    {{ quote.meta.title || 'UNTITLED PROJECT' }}
+                </div>
             </div>
             <div class="w-1/3 text-right space-y-2">
                 <div>
@@ -144,7 +150,7 @@
                             <td class="py-3 pl-2 align-top">
                                 <input v-model="item.name" list="dbList" @input="logic.handleItemInput(item)" 
                                     class="w-full font-bold text-slate-700 outline-none input-ghost placeholder-slate-300 mb-1" placeholder="Item Name">
-                                <textarea v-model="item.desc" rows="1" class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden" placeholder="Details..."></textarea>
+                                <textarea v-model="item.desc" rows="1" class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden" placeholder="Details..." @input="e => { e.target.style.height = ''; e.target.style.height = e.target.scrollHeight + 'px' }"></textarea>
                             </td>
                             <td class="py-3 align-top internal-col bg-yellow-50/30">
                                 <input type="number" v-model.number="item.cost" @input="logic.updateFromCost(item)" class="w-full text-right font-medium text-slate-500 bg-transparent outline-none">
@@ -288,7 +294,11 @@
                     a.click();
                 },
                 reset: () => { if(confirm("Reset?")) { localStorage.removeItem('so_current_quote'); location.reload(); } },
-                printPDF: () => { setTimeout(() => { window.print(); }, 300); }
+                printPDF: () => { 
+                    // 打印前强制触发布局重算
+                    window.dispatchEvent(new Event('resize'));
+                    setTimeout(() => { window.print(); }, 300); 
+                }
             };
 
             const totals = computed(() => {
@@ -305,6 +315,14 @@
                 loadDatabase();
                 const saved = localStorage.getItem('so_current_quote');
                 if (saved) quote.value = JSON.parse(saved);
+                
+                // 页面加载后根据内容调整一次所有 textarea 的高度
+                setTimeout(() => {
+                    document.querySelectorAll('textarea').forEach(el => {
+                        el.style.height = '';
+                        el.style.height = el.scrollHeight + 'px';
+                    });
+                }, 500);
             });
             watch(quote, (val) => localStorage.setItem('so_current_quote', JSON.stringify(val)), { deep: true });
             return { config, quote, db, logic, actions, totals };
