@@ -16,23 +16,17 @@
         .qty-input::-webkit-inner-spin-button,
         .qty-input::-webkit-outer-spin-button {
             opacity: 1 !important;
-            height: 24px !important;
+            height: 20px !important;
             cursor: pointer;
             display: block !important;
         }
 
-        /* 打印专用：隐藏编辑框，显示存文本 */
+        /* 打印逻辑：隐藏输入框，显示存文本 */
         .print-only-text { display: none; }
 
         @media print {
             .no-print { display: none !important; }
-            .print-only-text { 
-                display: block !important; 
-                font-weight: 900 !important; 
-                font-size: 20px !important; 
-                color: #0f172a !important;
-                margin-bottom: 1rem !important;
-            }
+            .print-only-text { display: block !important; }
             .edit-only-input { display: none !important; }
             
             body { background: white !important; padding: 0 !important; }
@@ -40,7 +34,7 @@
                 border: 1px solid #e2e8f0 !important; 
                 box-shadow: none !important; 
                 border-radius: 1.5rem !important;
-                break-inside: avoid; /* 防止分页截断 */
+                break-inside: avoid;
             }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
@@ -64,21 +58,34 @@
 
     <div class="container mx-auto max-w-5xl py-12 px-6">
         <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10 card-box">
-            <div class="flex justify-between items-start">
-                <div class="w-1/2">
+            <div class="flex justify-between items-start gap-8">
+                <div class="flex-1 min-w-0">
                     <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-2 block">Project Reference</label>
-                    <div class="print-only-text uppercase tracking-tighter text-4xl">{{ quoteData.title || 'PROJECT NAME' }}</div>
-                    <input v-model="quoteData.title" class="edit-only-input text-5xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter" placeholder="PROJECT NAME">
+                    <div class="print-only-text uppercase font-black text-3xl leading-tight break-words">{{ quoteData.title || 'PROJECT NAME' }}</div>
+                    <textarea v-model="quoteData.title" 
+                              rows="2"
+                              class="edit-only-input text-3xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter resize-none leading-tight overflow-hidden" 
+                              placeholder="ENTER PROJECT NAME..."
+                              @input="autoResize"></textarea>
                 </div>
-                <div class="w-[320px] text-right space-y-4">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 block">Prepared For</label>
-                        <div class="print-only-text text-2xl">{{ quoteData.client || 'Client Name' }}</div>
-                        <input v-model="quoteData.client" class="edit-only-input text-right font-black text-slate-900 text-2xl w-full outline-none bg-transparent" placeholder="Client Name">
+
+                <div class="w-[260px] text-right shrink-0">
+                    <div class="mb-4">
+                        <label class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block">Prepared For</label>
+                        <div class="print-only-text text-lg font-bold leading-tight">{{ quoteData.client || 'Client Name' }}</div>
+                        <input v-model="quoteData.client" 
+                               class="edit-only-input text-right font-black text-slate-900 text-lg w-full outline-none bg-transparent border-b border-transparent focus:border-blue-200" 
+                               placeholder="Client Name">
                     </div>
-                    <div class="border-t border-slate-100 pt-4 space-y-2 text-[11px] font-bold">
-                        <div class="flex justify-between"><span class="text-slate-400 uppercase">Issue Date</span><span>{{ currentDate }}</span></div>
-                        <div class="flex justify-between"><span class="text-blue-500 uppercase">Expiry Date</span><span class="text-blue-600">{{ expiryDate }}</span></div>
+                    <div class="space-y-1.5 text-[10px] font-bold border-t border-slate-50 pt-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 uppercase tracking-tighter">Issue Date</span>
+                            <span class="text-slate-900">{{ currentDate }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-blue-500 uppercase tracking-tighter">Expiry Date</span>
+                            <span class="text-blue-600">{{ expiryDate }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -86,13 +93,11 @@
 
         <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-12">
             <div class="flex items-center space-x-3 mb-4 px-2">
-                <div class="bg-slate-900 text-white w-7 h-7 rounded flex items-center justify-center text-[10px] font-black no-print">{{ sIndex + 1 }}</div>
-                
+                <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[9px] font-black no-print">{{ sIndex + 1 }}</div>
+                <div class="print-only-text font-black text-xl text-slate-800">{{ section.title || 'Section Name' }}</div>
                 <input v-model="section.title" 
-                       class="edit-only-input font-black text-slate-800 text-2xl outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400 w-full max-w-lg" 
-                       placeholder="Section Name (e.g. Production Details)">
-                
-                <div class="print-only-text">{{ section.title || 'Section Name' }}</div>
+                       class="edit-only-input font-black text-slate-800 text-xl outline-none bg-transparent w-full" 
+                       placeholder="Section Name...">
             </div>
 
             <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden card-box">
@@ -100,60 +105,60 @@
                     <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
                         <tr>
                             <th class="px-8 py-5 w-auto">Item Description</th>
-                            <th class="px-2 py-5 w-24 text-center">Qty</th>
-                            <th class="px-2 py-5 w-32 text-right">Unit Price ($)</th>
-                            <th class="px-8 py-5 w-40 text-right">Sub Total</th>
+                            <th class="px-2 py-5 w-20 text-center">Qty</th>
+                            <th class="px-2 py-5 w-28 text-right">Unit ($)</th>
+                            <th class="px-8 py-5 w-32 text-right">Sub Total</th>
                             <th class="px-2 py-5 w-10 no-print"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex">
                             <td class="px-8 py-4">
-                                <div class="print-only-text !text-[14px] !mb-0 font-bold">{{ item.name }}</div>
+                                <div class="print-only-text font-bold text-[13px]">{{ item.name }}</div>
                                 <input v-model="item.name" @input="handleRowLogic(sIndex, iIndex)" 
-                                       class="edit-only-input block w-full font-bold text-slate-800 outline-none bg-transparent text-[14px]" 
+                                       class="edit-only-input block w-full font-bold text-slate-800 outline-none bg-transparent text-[13px]" 
                                        placeholder="Item name...">
                                 
-                                <div class="print-only-text !text-[10px] !font-normal italic text-slate-400">{{ item.details }}</div>
+                                <div class="print-only-text text-[10px] text-slate-400 italic">{{ item.details }}</div>
                                 <input v-model="item.details" 
-                                       class="edit-only-input block w-full text-[10px] text-slate-400 outline-none bg-transparent italic mt-1" 
-                                       placeholder="Additional details...">
+                                       class="edit-only-input block w-full text-[10px] text-slate-400 outline-none bg-transparent italic mt-0.5" 
+                                       placeholder="Details...">
                             </td>
                             <td class="px-2 py-4">
                                 <input type="number" v-model.number="item.qty" 
-                                       class="qty-input w-full bg-slate-50 border border-slate-200 py-2 rounded-lg text-center font-bold text-slate-700">
+                                       class="qty-input w-full bg-slate-50 border border-slate-200 py-1.5 rounded-lg text-center font-bold text-slate-700 text-xs">
                             </td>
-                            <td class="px-2 py-4 text-right font-semibold">
-                                <span class="print-only-text !mb-0">{{ item.price.toFixed(2) }}</span>
+                            <td class="px-2 py-4 text-right">
+                                <span class="print-only-text text-sm font-semibold">{{ item.price.toFixed(2) }}</span>
                                 <input type="number" v-model.number="item.price" step="0.01" 
-                                       class="edit-only-input w-full text-right outline-none bg-transparent">
+                                       class="edit-only-input w-full text-right outline-none bg-transparent font-semibold text-slate-600 text-sm">
                             </td>
-                            <td class="px-8 py-4 text-right font-black text-slate-900 text-[14px]">
+                            <td class="px-8 py-4 text-right font-black text-slate-900 text-[13px]">
                                 ${{ (item.qty * item.price).toFixed(2) }}
                             </td>
                             <td class="px-2 py-4 text-center no-print">
                                 <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400">
-                                    <i class="fas fa-times-circle text-lg"></i>
+                                    <i class="fas fa-times-circle"></i>
                                 </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-4 bg-slate-50/30 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 transition-all text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                    + Add New Line
+                <div @click="addItem(sIndex)" class="p-3 bg-slate-50/30 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 transition-all text-[9px] font-black text-blue-500 uppercase tracking-widest">
+                    + Add Line Item
                 </div>
             </div>
         </div>
 
         <div class="flex justify-end mt-12 mb-24">
-            <div class="w-80 space-y-4">
-                <div class="px-4 space-y-2 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">
+            <div class="w-72 space-y-4">
+                <div class="px-4 space-y-1.5 text-[9px] font-black text-slate-400 uppercase text-right tracking-widest">
                     <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-900">${{ subTotal.toFixed(2) }}</span></div>
                     <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10%)</span><span class="text-slate-900">${{ gstAmount.toFixed(2) }}</span></div>
                 </div>
-                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200 text-right">
-                    <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Grand Total Due</div>
-                    <div class="text-4xl font-black tracking-tighter leading-none">${{ grandTotal.toFixed(2) }}</div>
+                <div class="bg-blue-600 rounded-2xl p-5 text-white shadow-xl text-right">
+                    <div class="text-[8px] font-black uppercase tracking-widest opacity-80 mb-1">Total Amount Due</div>
+                    <div class="text-3xl font-black tracking-tighter leading-none">${{ grandTotal.toFixed(2) }}</div>
                 </div>
             </div>
         </div>
@@ -174,7 +179,7 @@
             });
 
             onMounted(() => {
-                const saved = localStorage.getItem('signedon_v30_stable');
+                const saved = localStorage.getItem('signedon_v31_pro');
                 if (saved) quoteData.value = JSON.parse(saved);
             });
 
@@ -185,15 +190,20 @@
                 }
             };
 
+            const autoResize = (e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+            };
+
             const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0));
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_v30_stable', JSON.stringify(val)), { deep: true });
+            watch(quoteData, (val) => localStorage.setItem('signedon_v31_pro', JSON.stringify(val)), { deep: true });
 
             return { 
                 quoteData, currentDate: ref(formatDate(today)), expiryDate: ref(formatDate(expiry)), 
-                subTotal, gstAmount, grandTotal, handleRowLogic,
+                subTotal, gstAmount, grandTotal, handleRowLogic, autoResize,
                 addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
                 printQuote: () => window.print(),
