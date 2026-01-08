@@ -24,44 +24,17 @@
 
         /* ==========================================================================
            【核弹级】打印修复 (NUCLEAR PRINT FIX)
-           原理：打印时隐藏所有东西，只把 id="printable-area" 强制显示并绝对定位到左上角
            ========================================================================== */
         @media print {
-            /* 1. 隐藏页面上的每一个元素 */
-            body * {
-                visibility: hidden;
-            }
-
-            /* 2. 只让【打印区域】及其子元素可见 */
-            #printable-area, #printable-area * {
-                visibility: visible;
-            }
-
-            /* 3. 强制重置位置，无视屏幕滚动条，直接定位到纸张左上角 */
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
             #printable-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                background: white;
-                box-shadow: none !important;
-                border: none !important;
+                position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
+                background: white; box-shadow: none !important; border: none !important;
             }
-
-            /* 4. 强制隐藏不需要打印的特定类 (双重保险) */
-            .no-print, .internal-col, nav, button {
-                display: none !important;
-            }
-
-            /* 5. 确保浏览器打印背景色 (Table Header的颜色) */
+            .no-print, .internal-col, nav, button { display: none !important; }
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            /* 6. 分页控制 */
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
-            
-            /* 7. 输入框变纯文本 */
             input, textarea { border: none !important; resize: none !important; padding: 0 !important; }
         }
     </style>
@@ -124,7 +97,7 @@
                 <table class="w-full text-left text-sm border-collapse">
                     <thead>
                         <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b border-slate-100">
-                            <th class="pb-3 pl-2 w-[40%]">Description & Links</th>
+                            <th class="pb-3 pl-2 w-[40%]">Description</th>
                             <th class="pb-3 text-right w-[10%] internal-col bg-yellow-50/50 text-yellow-600">Cost</th>
                             <th class="pb-3 text-right w-[10%] internal-col bg-yellow-50/50 text-yellow-600">Margin%</th>
                             <th class="pb-3 text-center w-[10%]">Qty</th>
@@ -145,11 +118,7 @@
                                     class="w-full text-xs text-slate-400 outline-none input-ghost resize-none overflow-hidden placeholder-slate-200" 
                                     placeholder="Details..." oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
                                 
-                                <div class="mt-1 flex items-center gap-2 internal-col no-print">
-                                    <i class="fas fa-link text-xs text-slate-300"></i>
-                                    <input v-model="item.refLink" class="text-[10px] w-full text-blue-500 bg-transparent outline-none placeholder-slate-200" placeholder="Paste Reference Link (OneDrive)...">
-                                </div>
-                            </td>
+                                </td>
 
                             <td class="py-3 align-top internal-col bg-yellow-50/30">
                                 <input type="number" v-model.number="item.cost" class="w-full text-right font-medium text-slate-500 bg-transparent outline-none" placeholder="0">
@@ -197,16 +166,8 @@
 
         <footer class="border-t border-slate-200 pt-10 mt-10 page-break">
             <div class="flex justify-between items-end">
-                <div class="internal-col bg-yellow-100/50 border border-yellow-200 rounded p-4">
-                    <div class="text-[10px] font-black text-yellow-700 uppercase mb-2">Internal Analysis</div>
-                    <div class="text-xs text-yellow-900 w-48 space-y-1">
-                        <div class="flex justify-between"><span>Total Cost:</span> <span class="font-bold">${{ totals.cost.toFixed(2) }}</span></div>
-                        <div class="flex justify-between"><span>Total Profit:</span> <span class="font-bold text-green-700">${{ totals.profit.toFixed(2) }}</span></div>
-                        <div class="flex justify-between border-t border-yellow-200 pt-1 mt-1"><span>Avg Margin:</span> <span class="font-bold">{{ totals.marginPercent }}%</span></div>
-                    </div>
-                </div>
-
-                <div class="w-64 space-y-3 text-right">
+                
+                <div class="w-64 space-y-3 text-left">
                     <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
                         <span>Subtotal</span> <span class="text-slate-800">${{ totals.sell.toFixed(2) }}</span>
                     </div>
@@ -218,6 +179,16 @@
                         <span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span>
                     </div>
                 </div>
+
+                <div class="internal-col bg-yellow-100/50 border border-yellow-200 rounded p-4">
+                    <div class="text-[10px] font-black text-yellow-700 uppercase mb-2">Internal Analysis</div>
+                    <div class="text-xs text-yellow-900 w-48 space-y-1">
+                        <div class="flex justify-between"><span>Total Cost:</span> <span class="font-bold">${{ totals.cost.toFixed(2) }}</span></div>
+                        <div class="flex justify-between"><span>Total Profit:</span> <span class="font-bold text-green-700">${{ totals.profit.toFixed(2) }}</span></div>
+                        <div class="flex justify-between border-t border-yellow-200 pt-1 mt-1"><span>Avg Margin:</span> <span class="font-bold">{{ totals.marginPercent }}%</span></div>
+                    </div>
+                </div>
+
             </div>
         </footer>
     </main>
@@ -238,9 +209,10 @@
                 repoDB: [], localDB: []
             });
 
+            // 【已移除】refLink 字段
             const quote = ref({
                 meta: { title: '', client: '' },
-                sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null, refLink: '' }] }]
+                sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null }] }]
             });
 
             // --- Database ---
@@ -264,7 +236,6 @@
 
             // --- Logic ---
             const logic = {
-                // 核心：计算售价，如果用户手动改过价格，优先使用手动价
                 calculateSell: (item) => {
                     if (item.manualPrice && item.manualPrice !== "") return parseFloat(item.manualPrice);
                     return parseFloat((item.cost * (1 + item.margin/100)).toFixed(2));
@@ -277,13 +248,12 @@
                         item.margin = match.margin || 30; 
                         if (match.sell && !match.cost) item.cost = (match.sell / 1.3).toFixed(2);
                         if (!item.desc) item.desc = "Standard specifications apply.";
-                        item.manualPrice = null; // 重置手动价格
+                        item.manualPrice = null; 
                     }
                 },
                 
                 learnItem: (item) => {
                     if (!item.name) return;
-                    // 保存时只学 Cost 和 Margin，让系统更智能
                     const idx = config.localDB.findIndex(d => d.name === item.name);
                     const sellPrice = (item.cost * (1 + item.margin/100)).toFixed(2);
                     const entry = { name: item.name, cost: item.cost, margin: item.margin, sell: sellPrice };
@@ -296,7 +266,8 @@
 
             // --- Actions ---
             const actions = {
-                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null, refLink: '' }),
+                // 【已移除】refLink 字段
+                addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null }),
                 removeItem: (s, i) => {
                     if (quote.value.sections[s].items.length > 1) quote.value.sections[s].items.splice(i, 1);
                     else quote.value.sections[s].items[0] = { name: '', desc: '', qty: 1, cost: 0, margin: 30, manualPrice: null };
@@ -328,7 +299,6 @@
                 },
                 reset: () => { if(confirm("Reset?")) { localStorage.removeItem('so_current_quote'); location.reload(); } },
 
-                // 【修复核心】专用打印函数：延时触发，确保渲染完成
                 printPDF: () => {
                     setTimeout(() => {
                         window.print();
