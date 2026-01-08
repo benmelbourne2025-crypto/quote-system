@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Professional Costing</title>
+    <title>SignedOn | Internal Costing Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,140 +12,149 @@
         body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
         [v-cloak] { display: none !important; }
 
-        /* 修复头部溢出 */
-        .master-grid { display: grid; grid-template-columns: 1fr 280px; gap: 2rem; }
+        /* 修复头部锁定 */
+        .header-grid { display: grid; grid-template-columns: 1fr 280px; gap: 2rem; }
         
-        /* Quotient 附件样式 */
+        /* Quotient 风格附件 */
         .attachment-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .thumb-square {
-            width: 60px; height: 60px; border-radius: 6px; overflow: hidden;
+        .thumb-box {
+            width: 56px; height: 56px; border-radius: 6px; overflow: hidden;
             border: 1px solid #e2e8f0; position: relative; background: #fff;
         }
-        .thumb-square img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
         .thumb-del {
             position: absolute; top: 0; right: 0; background: #ef4444; color: white;
-            font-size: 9px; width: 16px; height: 16px; display: flex; align-items: center; 
+            font-size: 8px; width: 16px; height: 16px; display: flex; align-items: center; 
             justify-content: center; cursor: pointer; opacity: 0; transition: 0.2s;
         }
-        .thumb-square:hover .thumb-del { opacity: 1; }
+        .thumb-box:hover .thumb-del { opacity: 1; }
         
-        /* 上传占位符 */
-        .upload-placeholder {
-            width: 60px; height: 60px; border: 2px dashed #cbd5e1; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            color: #94a3b8; cursor: pointer; background: #fff; transition: 0.2s;
-        }
-        .upload-placeholder:hover { border-color: #3b82f6; color: #3b82f6; }
-
+        /* 响应式打印逻辑：解决 Double 显示 */
         @media print {
             .no-print { display: none !important; }
-            .card-box { border: 1px solid #e2e8f0; box-shadow: none !important; }
-            input, textarea { border: none !important; outline: none !important; padding: 0 !important; }
+            .card-box { border: 1px solid #e2e8f0 !important; box-shadow: none !important; }
+            input, textarea { border: none !important; padding: 0 !important; background: transparent !important; }
+            .print-bold { font-weight: 800 !important; }
+        }
+
+        /* 强制隐藏输入框的箭头 (Chrome, Safari, Edge, Opera) */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
         }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-24">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10">
+    <nav class="bg-[#0f172a] text-white p-4 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-xl">
         <div class="flex items-center space-x-6">
             <span class="text-xl font-black italic">signed<span class="text-blue-500">on</span></span>
-            <div class="flex bg-slate-800 rounded-lg p-1 text-[10px] font-bold uppercase">
-                <label class="px-4 py-2 cursor-pointer hover:bg-slate-700 rounded-md">
-                    <i class="fas fa-folder-open mr-2 text-yellow-400"></i> Open JSON
+            <div class="flex bg-slate-800 rounded-lg p-1 text-[10px] font-bold">
+                <label class="px-4 py-2 cursor-pointer hover:bg-slate-700 rounded-md transition">
+                    <i class="fas fa-folder-open mr-2 text-yellow-400"></i> IMPORT JSON
                     <input type="file" class="hidden" @change="importJson">
                 </label>
-                <button @click="exportJson" class="px-4 py-2 hover:bg-slate-700 rounded-md border-l border-slate-700">
-                    <i class="fas fa-save mr-2 text-blue-400"></i> Save JSON
+                <button @click="exportJson" class="px-4 py-2 hover:bg-slate-700 rounded-md transition border-l border-slate-700">
+                    <i class="fas fa-save mr-2 text-blue-400"></i> SAVE JSON
                 </button>
             </div>
         </div>
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest">Generate PDF</button>
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">Generate PDF</button>
     </nav>
 
     <div class="container mx-auto max-w-6xl py-10 px-6">
-        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-8 p-10 master-grid">
-            <div>
-                <label class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-2 block">Project Reference</label>
-                <input v-model="quoteData.title" class="text-4xl font-black text-slate-900 w-full outline-none bg-transparent uppercase tracking-tighter" placeholder="PROJECT NAME">
+        <header class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 mb-10 p-10 card-box header-grid">
+            <div class="min-w-0">
+                <label class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-3 block">Project Ref</label>
+                <textarea v-model="quoteData.title" rows="1" class="text-4xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-200 uppercase tracking-tighter resize-none print-bold" placeholder="PROJECT NAME..." @input="autoResize"></textarea>
             </div>
-            <div class="border-l border-slate-100 pl-8 space-y-4">
+
+            <div class="border-l border-slate-100 pl-10 space-y-5">
                 <div>
                     <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
-                    <input v-model="quoteData.client" class="font-bold text-slate-800 text-sm w-full outline-none" placeholder="Client Name">
+                    <input v-model="quoteData.client" class="font-bold text-slate-800 text-sm w-full outline-none bg-transparent" placeholder="Client Name">
                 </div>
-                <div class="pt-3 border-t border-slate-50 text-[10px]">
-                    <div class="flex justify-between mb-1"><span class="text-slate-400">DATE:</span><span class="font-bold">{{ currentDate }}</span></div>
-                    <div class="flex justify-between text-blue-600"><span class="font-black">EXPIRY:</span><span class="font-bold">{{ expiryDate }}</span></div>
+                <div class="pt-4 border-t border-slate-50">
+                    <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 font-bold">DATE:</span><span class="font-black">{{ currentDate }}</span></div>
+                    <div class="flex justify-between text-[10px] text-blue-600 font-black"><span class="uppercase">Expiry:</span><span>{{ expiryDate }}</span></div>
                 </div>
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10">
-            <div class="flex items-center mb-4 px-2">
-                <input v-model="section.title" class="font-black text-slate-800 text-2xl outline-none bg-transparent flex-1" placeholder="Section Name">
-                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id">
+            <div class="flex items-center mb-6 px-4">
+                <input v-model="section.title" class="font-black text-slate-800 text-2xl outline-none bg-transparent flex-1" placeholder="Section Name...">
+                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-500 ml-4 transition"><i class="fas fa-trash-alt"></i></button>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <table class="w-full text-left table-fixed">
-                    <thead class="bg-slate-800 text-white text-[9px] font-bold uppercase tracking-widest">
+            <div class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden card-box mb-10">
+                <table class="w-full text-left table-fixed border-collapse">
+                    <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
                         <tr>
-                            <th class="px-6 py-4 w-auto">Description & Attachments</th>
-                            <th class="px-2 py-4 w-20 text-center">Qty</th>
-                            <th class="px-2 py-4 w-28 text-right">Unit ($)</th>
-                            <th class="px-6 py-4 w-40 text-right">Sub Total</th>
+                            <th class="px-8 py-5 w-auto">Description & Attachments</th>
+                            <th class="px-2 py-5 w-24 text-center">Qty</th>
+                            <th class="px-2 py-5 w-32 text-right">Unit ($)</th>
+                            <th class="px-8 py-5 w-44 text-right">Sub Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group relative">
-                            <td class="px-6 py-5">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group relative hover:bg-slate-50/50 transition-colors">
+                            <td class="px-8 py-6">
                                 <input v-model="item.name" @input="handleItemInput(sIndex, iIndex)"
-                                       class="w-full font-bold text-slate-800 text-base outline-none bg-transparent" placeholder="Start typing item...">
+                                       class="w-full font-bold text-slate-800 text-base outline-none bg-transparent print-bold" placeholder="Item name...">
                                 
-                                <div class="flex items-center mt-1 no-print text-blue-500 text-[10px]">
-                                    <i class="fas fa-link mr-1 opacity-50"></i>
-                                    <input v-model="item.fileLink" class="w-full outline-none bg-transparent font-medium" placeholder="Paste file link here...">
+                                <div class="flex items-center mt-2 no-print bg-slate-100/50 w-fit px-2 py-1 rounded text-blue-500 text-[10px]">
+                                    <i class="fas fa-link mr-2"></i>
+                                    <input v-model="item.fileLink" class="w-64 outline-none bg-transparent font-medium" placeholder="OneDrive or File Link...">
                                 </div>
 
                                 <div class="attachment-grid">
-                                    <div v-for="(img, imgIdx) in item.images" :key="imgIdx" class="thumb-square">
+                                    <div v-for="(img, imgIdx) in item.images" :key="imgIdx" class="thumb-box">
                                         <img :src="img">
                                         <div @click="removeImage(item, imgIdx)" class="thumb-del no-print"><i class="fas fa-times"></i></div>
                                     </div>
-                                    <div class="upload-placeholder no-print" @click="$refs['file'+sIndex+iIndex][0].click()">
+                                    <div class="thumb-box flex items-center justify-center border-dashed border-2 cursor-pointer no-print hover:border-blue-400 text-slate-300" @click="$refs['file'+sIndex+iIndex][0].click()">
                                         <i class="fas fa-plus text-xs"></i>
                                         <input :ref="'file'+sIndex+iIndex" type="file" class="hidden" multiple @change="uploadImages($event, item)">
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-2 py-5">
-                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold bg-slate-50 rounded py-1 outline-none">
+                            
+                            <td class="px-2 py-6 text-center">
+                                <input type="number" v-model.number="item.qty" class="w-16 bg-white border border-slate-200 py-2 rounded-xl text-center font-bold text-sm outline-none">
                             </td>
-                            <td class="px-2 py-5 text-right">
-                                <input type="number" v-model.number="item.price" class="w-20 text-right font-bold text-slate-600 outline-none" step="0.01">
+                            <td class="px-2 py-6 text-right">
+                                <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2">
+                                    <span class="text-slate-300 text-[10px] mr-1">$</span>
+                                    <input type="number" v-model.number="item.price" class="w-20 text-right outline-none font-bold text-slate-600 text-sm" step="0.01">
+                                </div>
                             </td>
-                            <td class="px-6 py-5 text-right font-black text-slate-900 relative">
-                                ${{ (item.qty * item.price).toFixed(2) }}
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" 
-                                        class="no-print absolute right-1 top-1/2 -translate-y-1/2 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
+                            <td class="px-8 py-6 text-right relative">
+                                <div class="flex items-center justify-end space-x-2">
+                                    <span class="font-black text-slate-900 text-lg">${{ (item.qty * item.price).toFixed(2) }}</span>
+                                    <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="no-print text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all text-sm">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-3 bg-slate-50/50 border-t text-center no-print cursor-pointer hover:bg-blue-50 text-[9px] font-bold text-blue-500 uppercase tracking-widest">+ Add Line</div>
+                <div @click="addItem(sIndex)" class="p-4 bg-slate-50/50 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 text-[10px] font-black text-blue-500 uppercase tracking-widest transition-colors">+ Add Line Item</div>
             </div>
+            
+            <button @click="addSection" class="no-print w-full bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-[2rem] py-6 mb-12 text-blue-500 font-black text-[11px] uppercase tracking-[0.4em] hover:bg-blue-100 transition-all">
+                <i class="fas fa-plus-circle mr-2"></i> Add New Section
+            </button>
         </div>
 
-        <div class="flex justify-end mt-10">
-            <div class="w-80 bg-blue-600 rounded-3xl p-8 text-white shadow-xl text-right">
-                <div class="flex justify-between text-[10px] font-bold opacity-70 mb-2 uppercase tracking-widest">
+        <div class="flex justify-end mt-16">
+            <div class="w-96 bg-blue-600 rounded-[3rem] p-10 text-white shadow-2xl text-right">
+                <div class="flex justify-between items-center text-[11px] uppercase font-black opacity-60 mb-4 tracking-widest">
                     <span>Subtotal</span><span>${{ subTotal.toFixed(2) }}</span>
                 </div>
-                <div class="text-[9px] font-black uppercase opacity-80 mb-1">Total (Inc. GST)</div>
-                <div class="text-5xl font-black tracking-tighter">${{ (subTotal * 1.1).toFixed(2) }}</div>
+                <div class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 mb-2">Total (Inc. GST)</div>
+                <div class="text-6xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
         </div>
     </div>
@@ -157,7 +166,7 @@
         setup() {
             const quoteData = ref({
                 title: '', client: '',
-                sections: [{ id: Date.now(), title: 'Production Details', items: [{ name: '', qty: 1, price: 0, images: [], fileLink: '' }] }]
+                sections: [{ id: Date.now(), title: 'Production Costs', items: [{ name: '', qty: 1, price: 0, images: [], fileLink: '' }] }]
             });
 
             const handleItemInput = (sIdx, iIdx) => {
@@ -182,13 +191,14 @@
                 removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
                 subTotal: computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0)),
-                currentDate: ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })),
-                expiryDate: ref(new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })),
+                currentDate: ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
+                expiryDate: ref(new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
                 printQuote: () => window.print(),
+                autoResize: (e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; },
                 exportJson: () => {
                     const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                    a.download = `Quote_${quoteData.value.title || 'Export'}.json`; a.click();
+                    a.download = `Costing_${quoteData.value.title}.json`; a.click();
                 },
                 importJson: (e) => {
                     const reader = new FileReader();
