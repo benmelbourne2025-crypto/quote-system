@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Smart Quote System</title>
+    <title>SignedOn | Pro System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,6 +12,10 @@
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         [v-cloak] { display: none !important; }
 
+        /* 修复 Qty 箭头 */
+        input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+
+        /* 打印逻辑 */
         .print-only { display: none; }
         @media print {
             .no-print { display: none !important; }
@@ -19,30 +23,28 @@
             .edit-only { display: none !important; }
             body { background: white !important; padding: 0 !important; }
             .card-box { border: 1px solid #f1f5f9 !important; box-shadow: none !important; break-inside: avoid; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
-        /* 下拉搜索列表样式 */
+        /* 确保建议列表浮在最上层 */
         .suggestion-box {
             position: absolute;
-            z-index: 50;
+            z-index: 9999;
             width: 100%;
-            max-height: 200px;
-            overflow-y: auto;
             background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
             border: 1px solid #e2e8f0;
+            top: 100%;
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 pb-20">
+<body class="bg-[#f8fafc] text-slate-800 pb-32">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-2xl">
+    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10">
         <div class="flex items-center space-x-6 text-[10px]">
             <span class="text-xl font-black italic tracking-tighter">signed<span class="text-blue-500">on</span></span>
-            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400">Save Data</button>
+            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400">Save JSON</button>
         </div>
         <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition">
             Generate PDF
@@ -53,26 +55,32 @@
         <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-8 p-8 card-box flex justify-between items-start gap-4">
             <div class="flex-grow min-w-0">
                 <label class="text-[8px] font-black text-blue-600 uppercase tracking-[0.4em] mb-1 block">Project Reference</label>
-                <textarea v-model="quoteData.title" rows="1" class="edit-only text-3xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter resize-none leading-tight" placeholder="ENTER PROJECT NAME..." @input="autoResize"></textarea>
+                <textarea v-model="quoteData.title" rows="1" class="edit-only text-3xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter resize-none leading-tight" placeholder="ENTER NAME..." @input="autoResize"></textarea>
                 <div class="print-only uppercase font-black text-3xl leading-tight">{{ quoteData.title }}</div>
             </div>
 
-            <div class="w-[180px] shrink-0 text-right">
-                <div class="mb-3">
-                    <label class="text-[7px] font-black text-slate-400 uppercase block mb-1">Prepared For</label>
-                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-sm w-full outline-none bg-transparent" placeholder="Client Name">
-                    <div class="print-only text-sm font-bold">{{ quoteData.client }}</div>
+            <div class="w-[160px] shrink-0">
+                <div class="mb-4">
+                    <label class="text-[7px] font-black text-slate-400 uppercase block mb-0.5 text-right">Prepared For</label>
+                    <input v-model="quoteData.client" class="edit-only text-right font-bold text-slate-800 text-[13px] w-full outline-none bg-transparent border-b border-transparent focus:border-blue-100" placeholder="Client Name">
+                    <div class="print-only text-right text-[13px] font-bold">{{ quoteData.client }}</div>
                 </div>
-                <div class="space-y-1 text-[9px] border-t pt-2 border-slate-50">
-                    <div class="flex justify-between items-center"><span class="text-slate-400 uppercase">Issue</span><span class="font-bold">{{ currentDate }}</span></div>
+                <div class="space-y-1 text-[9px] border-t border-slate-50 pt-2">
+                    <div class="flex justify-between items-center text-slate-400"><span class="uppercase">Issue</span><span class="font-bold text-slate-900">{{ currentDate }}</span></div>
                     <div class="flex justify-between items-center text-blue-500 font-bold"><span class="uppercase">Expiry</span><span>{{ expiryDate }}</span></div>
                 </div>
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-8">
-            <input v-model="section.title" class="edit-only font-black text-slate-800 text-lg outline-none bg-transparent w-full mb-3 px-2" placeholder="Section Title...">
-            <div class="print-only font-black text-lg mb-3 px-2">{{ section.title }}</div>
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10 group">
+            <div class="flex items-center justify-between mb-3 px-2">
+                <div class="flex items-center flex-grow">
+                    <div class="bg-slate-900 text-white w-5 h-5 rounded flex items-center justify-center text-[8px] font-black mr-3 no-print">{{ sIndex + 1 }}</div>
+                    <input v-model="section.title" class="edit-only font-black text-slate-800 text-lg outline-none bg-transparent w-full" placeholder="Section Name...">
+                    <div class="print-only font-black text-lg text-slate-800">{{ section.title }}</div>
+                </div>
+                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-400 text-xs ml-4"><i class="fas fa-trash-alt"></i></button>
+            </div>
 
             <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-visible card-box">
                 <table class="w-full text-left table-fixed border-collapse">
@@ -85,67 +93,69 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative group">
+                        <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="relative hover:bg-slate-50/50 transition-colors">
                             <td class="px-6 py-4 overflow-visible">
                                 <div class="relative">
                                     <input v-model="item.name" 
                                            @input="filterItems(sIndex, iIndex)"
                                            @focus="item.showSuggestions = true"
                                            @blur="hideSuggestions(item)"
-                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none" 
-                                           placeholder="Type to search database...">
+                                           class="edit-only w-full font-bold text-slate-800 text-[12px] outline-none bg-transparent" placeholder="Start typing...">
                                     
                                     <div v-if="item.showSuggestions && filteredDbItems.length" class="suggestion-box">
                                         <div v-for="dbItem in filteredDbItems" 
                                              @mousedown="selectItem(sIndex, iIndex, dbItem)"
                                              class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0">
-                                            <div class="font-bold text-xs text-slate-800">{{ dbItem.name }}</div>
-                                            <div class="text-[10px] text-slate-400 italic">{{ dbItem.details }}</div>
+                                            <div class="font-bold text-xs">{{ dbItem.name }}</div>
+                                            <div class="text-[9px] text-slate-400">{{ dbItem.details }}</div>
                                         </div>
                                     </div>
-
                                     <div class="print-only font-bold text-[12px]">{{ item.name }}</div>
                                 </div>
-                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1" placeholder="Specifications...">
+                                <input v-model="item.details" class="edit-only w-full text-[9px] text-slate-400 italic outline-none mt-1 bg-transparent" placeholder="Add specs...">
                                 <div class="print-only text-[9px] text-slate-400 italic">{{ item.details }}</div>
                             </td>
                             <td class="px-2 py-4">
-                                <input type="number" v-model.number="item.qty" class="w-full bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px] outline-none">
+                                <input type="number" v-model.number="item.qty" class="w-full bg-slate-50 border border-slate-100 py-1 rounded text-center font-bold text-slate-700 text-[11px] outline-none focus:border-blue-200 transition">
                             </td>
                             <td class="px-2 py-4">
-                                <input type="number" v-model.number="item.price" class="edit-only w-full text-right outline-none font-semibold text-slate-600 text-[11px]" step="0.01">
+                                <input type="number" v-model.number="item.price" class="edit-only w-full text-right outline-none font-semibold text-slate-600 text-[11px] bg-transparent" step="0.01">
                                 <div class="print-only text-right text-[11px] font-semibold">${{ item.price.toFixed(2) }}</div>
                             </td>
-                            <td class="px-6 py-4 text-right font-black text-slate-900 text-[12px]">
+                            <td class="px-6 py-4 text-right font-black text-slate-900 text-[12px] relative group-item">
                                 ${{ (item.qty * item.price).toFixed(2) }}
+                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="no-print absolute -right-4 top-1/2 -translate-y-1/2 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-2 bg-slate-50/30 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 text-[8px] font-black text-blue-400 uppercase tracking-widest">
+                <div @click="addItem(sIndex)" class="p-2 bg-slate-50/20 border-t border-slate-50 no-print text-center cursor-pointer hover:bg-blue-50 text-[8px] font-black text-blue-400 uppercase tracking-widest transition-all">
                     + Add Line Item
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end mt-10">
-            <div class="w-60 bg-blue-600 rounded-2xl p-5 text-white shadow-xl text-right">
-                <div class="text-[7px] font-black uppercase tracking-widest opacity-80 mb-0.5">Total Due (inc. GST)</div>
-                <div class="text-3xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
+        <button @click="addSection" class="no-print w-full border-2 border-dashed border-slate-200 rounded-[1.5rem] py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50/30 transition-all mb-12">
+            + Add New Section
+        </button>
+
+        <div class="flex justify-end pt-4">
+            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right">
+                <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Total (inc. GST)</div>
+                <div class="text-4xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
-    
-    // 您的物品数据库 - 您可以在这里添加更多数据
+    const { createApp, ref, computed, watch } = Vue;
     const itemDatabase = [
         { name: "18 Gauge Speaker Cable - 100m", details: "High-performance OFC cable", price: 430.92 },
         { name: "3M - 3900 High Intensity Prismatic", details: "Reflective sheeting for signs", price: 102.00 },
-        { name: "Blade Signs", details: "Double sided aluminum", price: 1000.00 },
-        { name: "Fixture Vinyl 600x800", details: "Permanent outdoor vinyl", price: 200.00 }
+        { name: "Blade Signs", details: "Double sided aluminum", price: 1000.00 }
     ];
 
     createApp({
@@ -168,28 +178,27 @@
 
             const selectItem = (sIdx, iIdx, dbItem) => {
                 const item = quoteData.value.sections[sIdx].items[iIdx];
-                item.name = dbItem.name;
-                item.details = dbItem.details;
-                item.price = dbItem.price;
-                item.showSuggestions = false;
-                // 如果是最后一行，自动加新行
-                if (iIdx === quoteData.value.sections[sIdx].items.length - 1) addItem(sIdx);
+                Object.assign(item, { name: dbItem.name, details: dbItem.details, price: dbItem.price, showSuggestions: false });
             };
 
-            const hideSuggestions = (item) => {
-                setTimeout(() => { item.showSuggestions = false; }, 200);
-            };
-
+            const addSection = () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0, showSuggestions: false }] });
             const addItem = (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false });
-            const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0));
-
+            
             return { 
-                quoteData, itemDatabase, filteredDbItems, searchQuery,
+                quoteData, filteredDbItems, filterItems, selectItem, addSection, addItem,
+                removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
+                removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
+                subTotal: computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0)),
                 currentDate: ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
                 expiryDate: ref(new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
-                filterItems, selectItem, hideSuggestions, addItem, subTotal,
                 printQuote: () => window.print(),
-                autoResize: (e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }
+                autoResize: (e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; },
+                hideSuggestions: (item) => setTimeout(() => item.showSuggestions = false, 200),
+                exportJson: () => {
+                    const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                    a.download = "Quote.json"; a.click();
+                }
             };
         }
     }).mount('#app');
