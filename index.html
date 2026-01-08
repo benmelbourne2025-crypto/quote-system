@@ -3,138 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Quote System</title>
+    <title>SignedOn | Professional Quote System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
         [v-cloak] { display: none !important; }
-
-        /* 恢复并固定 Qty 箭头 */
-        input[type="number"].qty-input::-webkit-inner-spin-button,
-        input[type="number"].qty-input::-webkit-outer-spin-button {
-            opacity: 1 !important;
-            height: 24px;
-            cursor: pointer;
-            display: block;
-        }
-
-        /* 确保输入框填满单元格，方便点击 */
-        .cell-input {
-            width: 100%;
-            height: 100%;
-            padding: 12px 0;
-            outline: none;
-            background: transparent;
-        }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; }
-            .qty-input::-webkit-inner-spin-button { display: none !important; }
-            input { border: none !important; background: transparent !important; }
+            body { background: white !important; padding: 0 !important; }
+            .card-box { border: 1px solid #eee !important; box-shadow: none !important; border-radius: 1rem !important; }
+            input { border: none !important; background: transparent !important; padding-left: 0 !important; }
+            input::placeholder { color: transparent !important; }
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] min-h-screen text-slate-800 pb-24">
+<body class="pb-24">
 
 <div id="app" v-cloak>
     <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print shadow-xl flex justify-between items-center px-10">
         <div class="flex items-center space-x-6 text-[10px]">
             <span class="text-xl font-black italic tracking-tighter">signed<span class="text-blue-500">on</span></span>
-            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400">Save JSON</button>
-            <label class="font-bold uppercase tracking-widest hover:text-yellow-400 cursor-pointer">
+            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400 transition">Save JSON</button>
+            <label class="font-bold uppercase tracking-widest hover:text-yellow-400 cursor-pointer transition">
                 Open File <input type="file" class="hidden" @change="importJson">
             </label>
         </div>
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg transition">
-            Print PDF
-        </button>
+        
+        <div class="flex items-center space-x-4">
+            <button @click="resetDatabase" class="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 transition mr-4">
+                <i class="fas fa-undo-alt mr-1"></i> Reset
+            </button>
+            <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg transition">
+                Print PDF
+            </button>
+        </div>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-12 px-6">
-        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10">
+        <header class="bg-white rounded-[2rem] shadow-sm border border-slate-200 mb-10 p-10 card-box">
             <div class="flex justify-between items-start">
                 <div class="w-1/2">
                     <label class="text-[9px] font-black text-blue-600 uppercase tracking-[0.4em] mb-2 block">Project Reference</label>
-                    <input v-model="quoteData.title" class="text-5xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter" placeholder="PROJECT NAME">
+                    <input v-model="quoteData.title" class="text-4xl font-black text-slate-900 w-full outline-none bg-transparent placeholder-slate-100 uppercase tracking-tighter" placeholder="PROJECT NAME">
                 </div>
-                <div class="w-[320px] text-right space-y-4">
+                <div class="w-[300px] text-right space-y-3">
                     <div>
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 block">Prepared For</label>
-                        <input v-model="quoteData.client" class="text-right font-black text-slate-900 text-2xl w-full outline-none bg-transparent" placeholder="Client Name">
+                        <input v-model="quoteData.client" class="text-right font-black text-slate-900 text-xl w-full outline-none bg-transparent" placeholder="Client Name">
                     </div>
-                    <div class="border-t border-slate-100 pt-4 space-y-2 text-[11px] font-bold">
-                        <div class="flex justify-between"><span class="text-slate-400 uppercase tracking-tight">Issue Date</span><span>{{ currentDate }}</span></div>
-                        <div class="flex justify-between"><span class="text-blue-500 uppercase tracking-tight">Expiry Date</span><span class="text-blue-600">{{ expiryDate }}</span></div>
+                    <div class="border-t border-slate-100 pt-3 text-[11px] font-bold">
+                        <div class="flex justify-between mb-1"><span class="text-slate-400 uppercase">Issue Date</span><span>{{ currentDate }}</span></div>
+                        <div class="flex justify-between text-blue-600"><span class="uppercase">Expiry Date</span><span>{{ expiryDate }}</span></div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-10">
-            <div class="flex items-center space-x-3 mb-4 px-2 no-print">
-                <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{{ sIndex + 1 }}</div>
-                <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400">
+        <div v-for="(section, sIndex) in quoteData.sections" :key="section.id" class="mb-12 relative">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{{ sIndex + 1 }}</div>
+                    <input v-model="section.title" class="font-black text-slate-800 text-lg outline-none bg-transparent border-b-2 border-transparent focus:border-blue-400">
+                </div>
+                <button v-if="quoteData.sections.length > 1" @click="removeSection(sIndex)" class="no-print text-slate-300 hover:text-red-500 transition p-2">
+                    <i class="fas fa-trash-alt text-sm"></i>
+                </button>
             </div>
 
-            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden">
+            <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden card-box">
                 <table class="w-full text-left table-fixed border-collapse">
                     <thead class="bg-[#1e293b] text-white text-[9px] font-black uppercase tracking-widest">
                         <tr>
                             <th class="px-8 py-5 w-auto">Item Description</th>
                             <th class="px-2 py-5 w-24 text-center">Qty</th>
-                            <th class="px-2 py-5 w-32 text-right">Price ($)</th>
-                            <th class="px-8 py-5 w-40 text-right">Sub Total</th>
-                            <th class="px-2 py-5 w-10 no-print"></th>
+                            <th class="px-2 py-5 w-28 text-right">Price ($)</th>
+                            <th class="px-8 py-5 w-44 text-right">Sub Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="(item, iIndex) in section.items" :key="iIndex" class="group hover:bg-slate-50/50">
-                            <td class="px-8 py-4">
+                            <td class="px-8 py-6">
                                 <input v-model="item.name" 
-                                       @input="handleRowLogic(sIndex, iIndex)" 
-                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent text-[14px]" 
-                                       placeholder="Enter item name...">
+                                       @input="handleRowLogic(sIndex, iIndex)"
+                                       class="block w-full font-bold text-slate-800 outline-none bg-transparent text-[14px] placeholder-slate-200" 
+                                       placeholder="Start typing item name...">
                                 <input v-model="item.details" 
                                        class="block w-full text-[10px] text-slate-400 outline-none bg-transparent italic mt-1" 
-                                       placeholder="Additional specs...">
+                                       placeholder="Additional specifications...">
                             </td>
-                            <td class="px-2 py-4">
+
+                            <td class="px-2 py-6">
                                 <input type="number" v-model.number="item.qty" 
-                                       class="qty-input w-full bg-slate-50 border border-slate-200 py-2 rounded-lg text-center font-bold text-slate-700">
+                                       class="w-full bg-slate-50 border border-slate-200 py-2 rounded-lg text-center font-bold text-slate-700 outline-none focus:border-blue-300">
                             </td>
-                            <td class="px-2 py-4 text-right">
+
+                            <td class="px-2 py-6 text-right">
                                 <input type="number" v-model.number="item.price" step="0.01" 
                                        class="w-full text-right font-bold text-slate-600 outline-none bg-transparent">
                             </td>
-                            <td class="px-8 py-4 text-right font-black text-slate-900 text-[14px]">
-                                ${{ (item.qty * item.price).toFixed(2) }}
-                            </td>
-                            <td class="px-2 py-4 text-center no-print">
-                                <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" class="text-slate-200 hover:text-red-400 transition-colors">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
+
+                            <td class="px-8 py-6 text-right relative">
+                                <div class="flex items-center justify-end space-x-3">
+                                    <span class="font-black text-slate-900 text-[14px]">${{ (item.qty * item.price).toFixed(2) }}</span>
+                                    <button v-if="section.items.length > 1" @click="removeItem(sIndex, iIndex)" 
+                                            class="no-print text-slate-200 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div @click="addItem(sIndex)" class="p-4 bg-slate-50/30 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 transition-all text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                    + Add Line Manually
+                <div @click="addItem(sIndex)" class="p-3 bg-slate-50/30 border-t border-slate-100 no-print text-center cursor-pointer hover:bg-blue-50 text-[9px] font-black text-blue-500 uppercase tracking-widest transition">
+                    + Add New Line
                 </div>
             </div>
         </div>
 
+        <button @click="addSection" class="no-print w-full border-2 border-dashed border-slate-200 rounded-[2rem] py-4 mb-10 text-slate-400 hover:border-blue-300 hover:text-blue-500 font-bold text-[10px] uppercase tracking-widest transition">
+            + Add New Section
+        </button>
+
         <div class="flex justify-end mt-12 mb-24">
             <div class="w-80 space-y-4">
                 <div class="px-4 space-y-2 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">
-                    <div class="flex justify-between"><span>Sub Total (Excl. GST)</span><span class="text-slate-900">${{ subTotal.toFixed(2) }}</span></div>
-                    <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10.0%)</span><span class="text-slate-900">${{ gstAmount.toFixed(2) }}</span></div>
+                    <div class="flex justify-between"><span>Sub Total</span><span class="text-slate-900">${{ subTotal.toFixed(2) }}</span></div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2"><span>GST (10%)</span><span class="text-slate-900">${{ gstAmount.toFixed(2) }}</span></div>
                 </div>
-                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200 text-right">
-                    <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Total Amount (Inc. GST)</div>
+                <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl text-right">
+                    <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Total Amount Due</div>
                     <div class="text-4xl font-black tracking-tighter leading-none">${{ grandTotal.toFixed(2) }}</div>
                 </div>
             </div>
@@ -143,44 +144,43 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createApp, ref, computed, watch, onMounted } = Vue;
     createApp({
         setup() {
-            const today = new Date();
-            const expiry = new Date(); expiry.setDate(today.getDate() + 30);
-            const formatDate = (date) => date.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
-            
-            const quoteData = ref({
+            const initialData = () => ({
                 title: '', client: '',
                 sections: [{ id: Date.now(), title: 'Production Details', items: [{ name: '', details: '', qty: 1, price: 0 }] }]
             });
 
-            onMounted(() => {
-                const saved = localStorage.getItem('signedon_v27_stable');
-                if (saved) quoteData.value = JSON.parse(saved);
-            });
+            const quoteData = ref(initialData());
 
-            // 核心逻辑：当在最后一行输入内容时，自动创建新行
             const handleRowLogic = (sIdx, iIdx) => {
                 const section = quoteData.value.sections[sIdx];
-                const currentItem = section.items[iIdx];
-                // 如果当前输入的是该 Section 的最后一行，且内容不为空，则增加新行
-                if (iIdx === section.items.length - 1 && currentItem.name.trim() !== '') {
+                if (iIdx === section.items.length - 1 && section.items[iIdx].name.trim() !== '') {
                     section.items.push({ name: '', details: '', qty: 1, price: 0 });
                 }
             };
 
             const subTotal = computed(() => quoteData.value.sections.reduce((t, s) => t + s.items.reduce((st, i) => st + (i.qty * i.price), 0), 0));
-            const gstAmount = computed(() => subTotal.value * 0.1);
-            const grandTotal = computed(() => subTotal.value * 1.1);
+            
+            onMounted(() => {
+                const saved = localStorage.getItem('signedon_final_stable');
+                if (saved) quoteData.value = JSON.parse(saved);
+            });
+            watch(quoteData, (val) => localStorage.setItem('signedon_final_stable', JSON.stringify(val)), { deep: true });
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_v27_stable', JSON.stringify(val)), { deep: true });
-
-            return { 
-                quoteData, currentDate: ref(formatDate(today)), expiryDate: ref(formatDate(expiry)), 
-                subTotal, gstAmount, grandTotal, handleRowLogic,
+            return {
+                quoteData, subTotal, 
+                gstAmount: computed(() => subTotal.value * 0.1),
+                grandTotal: computed(() => subTotal.value * 1.1),
+                currentDate: ref(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
+                expiryDate: ref(new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })),
+                handleRowLogic,
                 addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0 }),
                 removeItem: (sIdx, iIdx) => quoteData.value.sections[sIdx].items.splice(iIdx, 1),
+                addSection: () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0 }] }),
+                removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
+                resetDatabase: () => { if(confirm('Are you sure you want to clear all data?')) quoteData.value = initialData(); },
                 printQuote: () => window.print(),
                 exportJson: () => {
                     const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
@@ -189,7 +189,7 @@
                 },
                 importJson: (e) => {
                     const reader = new FileReader();
-                    reader.onload = (ev) => { quoteData.value = JSON.parse(ev.target.result); };
+                    reader.onload = (ev) => quoteData.value = JSON.parse(ev.target.result);
                     reader.readAsText(e.target.files[0]);
                 }
             };
