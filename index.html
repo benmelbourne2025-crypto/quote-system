@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Smart Quote</title>
+    <title>SignedOn | Smart Quote Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -29,12 +29,23 @@
 <body class="bg-[#f8fafc] text-slate-800 pb-40">
 
 <div id="app" v-cloak>
-    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10">
-        <div class="flex items-center space-x-6 text-[10px]">
-            <span class="text-xl font-black italic tracking-tighter">signed<span class="text-blue-500">on</span></span>
-            <button @click="exportJson" class="font-bold uppercase tracking-widest hover:text-blue-400 text-[10px]">Save JSON</button>
+    <nav class="bg-[#0f172a] text-white p-3 sticky top-0 z-[100] no-print flex justify-between items-center px-10 shadow-xl">
+        <div class="flex items-center space-x-5">
+            <span class="text-xl font-black italic tracking-tighter mr-2">signed<span class="text-blue-500">on</span></span>
+            
+            <button @click="exportJson" class="flex items-center font-bold uppercase tracking-widest hover:text-blue-400 text-[9px]">
+                <i class="fas fa-save mr-1.5 text-xs"></i> Save
+            </button>
+
+            <label class="flex items-center font-bold uppercase tracking-widest hover:text-yellow-400 cursor-pointer text-[9px]">
+                <i class="fas fa-folder-open mr-1.5 text-xs"></i> Open
+                <input type="file" class="hidden" @change="importJson">
+            </label>
         </div>
-        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg">Generate PDF</button>
+        
+        <button @click="printQuote" class="bg-blue-600 hover:bg-blue-500 px-5 py-1.5 rounded-lg font-black uppercase text-[9px] tracking-widest shadow-lg transition active:scale-95">
+            Generate PDF
+        </button>
     </nav>
 
     <div class="container mx-auto max-w-5xl py-8 px-6">
@@ -118,7 +129,7 @@
         </div>
 
         <div class="flex justify-end mt-10">
-            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right transform hover:scale-105 transition">
+            <div class="w-64 bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl text-right">
                 <div class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">Grand Total (inc. GST)</div>
                 <div class="text-4xl font-black tracking-tighter leading-none">${{ (subTotal * 1.1).toFixed(2) }}</div>
             </div>
@@ -128,6 +139,8 @@
 
 <script>
     const { createApp, ref, computed } = Vue;
+    
+    // 物品数据库
     const itemDatabase = [
         { name: "18 Gauge Speaker Cable - 100m", details: "High-performance OFC cable", price: 430.92 },
         { name: "3M - 3900 High Intensity Prismatic", details: "Reflective sheeting for signs", price: 102.00 },
@@ -157,8 +170,19 @@
                 Object.assign(item, { name: dbItem.name, details: dbItem.details, price: dbItem.price, showSuggestions: false });
             };
 
+            const importJson = (e) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        quoteData.value = data;
+                    } catch (err) { alert("Invalid JSON File"); }
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+
             return { 
-                quoteData, filteredDbItems, filterItems, selectItem,
+                quoteData, filteredDbItems, filterItems, selectItem, importJson,
                 addSection: () => quoteData.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', details: '', qty: 1, price: 0, showSuggestions: false }] }),
                 addItem: (sIdx) => quoteData.value.sections[sIdx].items.push({ name: '', details: '', qty: 1, price: 0, showSuggestions: false }),
                 removeSection: (idx) => quoteData.value.sections.splice(idx, 1),
@@ -172,7 +196,7 @@
                 exportJson: () => {
                     const blob = new Blob([JSON.stringify(quoteData.value)], { type: 'application/json' });
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                    a.download = "Quote.json"; a.click();
+                    a.download = `Quote_${quoteData.value.title || 'Export'}.json`; a.click();
                 }
             };
         }
