@@ -13,16 +13,25 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
         
-        input[type="number"] {
-            -moz-appearance: textfield;
-            border: none;
-            background-color: #f8fafc;
-            border-radius: 6px;
+        /* 恢复 Qty 输入框的小箭头 */
+        .qty-input {
+            -webkit-appearance: number-input !important;
+            -moz-appearance: textfield !important;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
         }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        
+        .qty-input:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        /* 仅在 Chrome/Safari 中始终显示小箭头 */
+        .qty-input::-webkit-inner-spin-button, 
+        .qty-input::-webkit-outer-spin-button { 
+            opacity: 1;
         }
 
         @media print { 
@@ -30,6 +39,7 @@
             body { background: white !important; padding: 0 !important; }
             .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
             .header-box { border: 1px solid #e2e8f0 !important; box-shadow: none !important; border-radius: 12px !important; }
+            .qty-input { border: none !important; background: transparent !important; -webkit-appearance: none !important; }
         }
     </style>
 </head>
@@ -77,11 +87,11 @@
                             <div class="space-y-1.5">
                                 <div class="flex justify-between items-center text-[11px]">
                                     <span class="font-bold text-slate-400 uppercase tracking-tight">Issue Date</span>
-                                    <span class="font-black text-slate-800">{{ currentDate }}</span>
+                                    <span class="font-black text-slate-800 uppercase text-[10px]">{{ currentDate }}</span>
                                 </div>
                                 <div class="flex justify-between items-center text-[11px]">
                                     <span class="font-bold text-blue-500/70 uppercase tracking-tight">Expiry Date</span>
-                                    <span class="font-black text-blue-600">{{ expiryDate }}</span>
+                                    <span class="font-black text-blue-600 uppercase text-[10px]">{{ expiryDate }}</span>
                                 </div>
                                 <div class="flex justify-between items-center text-[11px]">
                                     <span class="font-bold text-slate-400 uppercase tracking-tight">Quote Owner</span>
@@ -103,11 +113,11 @@
             </div>
 
             <div class="bg-white rounded-[1.5rem] shadow-xl border border-slate-100 overflow-hidden">
-                <table class="w-full text-left">
+                <table class="w-full text-left border-collapse">
                     <thead class="bg-[#1e293b] text-white">
                         <tr class="text-[9px] font-black uppercase tracking-[0.2em]">
                             <th class="px-8 py-5">Description</th>
-                            <th class="px-4 py-5 w-24 text-center">Qty</th>
+                            <th class="px-4 py-5 w-32 text-center">Qty</th>
                             <th class="px-4 py-5 w-32 text-right">Unit ($)</th>
                             <th class="px-8 py-5 w-44 text-right">Sub Total</th>
                             <th class="px-4 py-5 w-10 no-print"></th>
@@ -120,10 +130,13 @@
                                 <input v-model="item.details" class="block w-full text-[10px] text-slate-400 outline-none bg-transparent italic" placeholder="Add specific details...">
                             </td>
                             <td class="px-4 py-5">
-                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold text-slate-600 py-2">
+                                <div class="flex justify-center">
+                                    <input type="number" v-model.number="item.qty" 
+                                           class="qty-input w-20 text-center font-bold text-slate-700 py-2 rounded-lg text-sm">
+                                </div>
                             </td>
                             <td class="px-4 py-5">
-                                <input type="number" v-model.number="item.price" step="0.01" class="w-full text-right font-bold text-slate-600 py-2">
+                                <input type="number" v-model.number="item.price" step="0.01" class="w-full text-right font-bold text-slate-600 py-2 bg-transparent outline-none">
                             </td>
                             <td class="px-8 py-5 text-right font-black text-slate-900 text-[13px]">
                                 ${{ (item.qty * item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}
@@ -143,8 +156,8 @@
         <div class="flex justify-end pt-4 mb-20">
             <div class="w-80 space-y-4">
                 <div class="px-4 space-y-2 text-[10px] font-black text-slate-400 uppercase text-right tracking-[0.1em]">
-                    <div class="flex justify-between"><span>Sub Total (Ex. GST)</span><span class="text-slate-900">${{ subTotal.toLocaleString() }}</span></div>
-                    <div class="flex justify-between pb-2 border-b border-slate-100"><span>GST (10.0%)</span><span class="text-slate-900">${{ gstAmount.toLocaleString() }}</span></div>
+                    <div class="flex justify-between"><span>Sub Total (Ex. GST)</span><span class="text-slate-900">${{ subTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
+                    <div class="flex justify-between pb-2 border-b border-slate-100"><span>GST (10.0%)</span><span class="text-slate-900">${{ gstAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) }}</span></div>
                 </div>
                 <div class="bg-blue-600 rounded-2xl p-6 text-white shadow-2xl shadow-blue-200 text-right">
                     <div class="text-[8px] font-black uppercase tracking-[0.3em] opacity-70 mb-1">Total Amount Due (Inc. GST)</div>
@@ -178,7 +191,7 @@
             });
 
             onMounted(() => {
-                const saved = localStorage.getItem('signedon_v22');
+                const saved = localStorage.getItem('signedon_v23');
                 if (saved) quoteData.value = JSON.parse(saved);
             });
 
@@ -194,7 +207,7 @@
             const gstAmount = computed(() => subTotal.value * 0.1);
             const grandTotal = computed(() => subTotal.value * 1.1);
 
-            watch(quoteData, (val) => localStorage.setItem('signedon_v22', JSON.stringify(val)), { deep: true });
+            watch(quoteData, (val) => localStorage.setItem('signedon_v23', JSON.stringify(val)), { deep: true });
 
             return { 
                 quoteData, 
