@@ -17,30 +17,31 @@
         .internal-col input { color: #64748b; font-size: 0.85em; }
         .internal-col input:focus { color: #0f172a; }
         
-        /* 1. 网页编辑状态的标题样式 */
+        /* 1. 网页编辑标题：字号缩小一半 */
         .auto-resize-title {
-            font-size: clamp(24px, 4vw, 36px); 
-            line-height: 1.1;
+            font-size: clamp(18px, 2vw, 22px); 
+            line-height: 1.4;
             width: 100%;
             resize: none;
             overflow: hidden;
             background: transparent;
             border: none;
             outline: none;
-            font-weight: 900;
+            font-weight: 800;
             text-transform: uppercase;
             display: block;
+            color: #0f172a;
         }
 
-        /* 2. 打印专用文本层（默认隐藏） */
+        /* 2. 打印专用标题：字号缩小一半至 14pt */
         .print-title-display {
             display: none;
-            font-size: 26pt; /* 打印时的精准字号 */
-            font-weight: 900;
+            font-size: 14pt; 
+            font-weight: 800;
             text-transform: uppercase;
-            line-height: 1.1;
+            line-height: 1.4;
             word-break: break-word;
-            white-space: pre-wrap; /* 允许自然换行 */
+            white-space: pre-wrap;
         }
 
         @media print {
@@ -55,7 +56,6 @@
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
             
-            /* 3. 打印时核心切换：隐藏输入框，显示纯文本 DIV */
             .auto-resize-title { display: none !important; }
             .print-title-display { 
                 display: block !important; 
@@ -100,13 +100,13 @@
     </nav>
 
     <main id="printable-area" class="max-w-6xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl p-12">
-        <header class="border-b border-slate-100 flex justify-between items-start pb-12 mb-10">
+        <header class="border-b border-slate-100 flex justify-between items-start pb-8 mb-10">
             <div class="w-2/3">
-                <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Project Title</label>
+                <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2 block">Project Title</label>
                 
                 <textarea 
                     v-model="quote.meta.title" 
-                    class="auto-resize-title text-slate-900 placeholder-slate-200" 
+                    class="auto-resize-title placeholder-slate-200" 
                     placeholder="UNTITLED PROJECT"
                     rows="1"
                     @input="e => { e.target.style.height = ''; e.target.style.height = e.target.scrollHeight + 'px' }"
@@ -129,7 +129,7 @@
             <div v-for="(section, sIdx) in quote.sections" :key="section.id" class="page-break group/section">
                 <div class="flex items-center gap-4 mb-4 border-b-2 border-slate-100 pb-2">
                     <div class="bg-slate-900 text-white w-6 h-6 rounded flex items-center justify-center text-xs font-bold">{{ sIdx + 1 }}</div>
-                    <input v-model="section.title" class="text-xl font-bold text-slate-800 outline-none w-full bg-transparent" placeholder="Section Name">
+                    <input v-model="section.title" class="text-lg font-bold text-slate-800 outline-none w-full bg-transparent" placeholder="Section Name">
                     <button @click="actions.removeSection(sIdx)" class="no-print opacity-0 group-hover/section:opacity-100 text-slate-300 hover:text-red-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
                 </div>
 
@@ -295,7 +295,6 @@
                 },
                 reset: () => { if(confirm("Reset?")) { localStorage.removeItem('so_current_quote'); location.reload(); } },
                 printPDF: () => { 
-                    // 打印前强制触发布局重算
                     window.dispatchEvent(new Event('resize'));
                     setTimeout(() => { window.print(); }, 300); 
                 }
@@ -316,7 +315,6 @@
                 const saved = localStorage.getItem('so_current_quote');
                 if (saved) quote.value = JSON.parse(saved);
                 
-                // 页面加载后根据内容调整一次所有 textarea 的高度
                 setTimeout(() => {
                     document.querySelectorAll('textarea').forEach(el => {
                         el.style.height = '';
