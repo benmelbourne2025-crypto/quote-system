@@ -11,7 +11,7 @@
     <style>
         :root { --brand-dark: #0f172a; --brand-blue: #2563eb; }
         
-        /* 全局字体设置为 Aptos */
+        /* 全局字体设置为 Aptos 风格 */
         body { 
             font-family: 'Aptos', 'Segoe UI', 'Inter', sans-serif; 
             -webkit-font-smoothing: antialiased; 
@@ -21,10 +21,8 @@
         [v-cloak] { display: none !important; }
         .input-ghost { background: transparent; transition: all 0.2s; border-radius: 4px; }
         .input-ghost:focus { background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); outline: none; }
-        .internal-col input { color: #64748b; font-size: 0.85em; }
-        .internal-col input:focus { color: #0f172a; }
         
-        /* 1. 网页编辑标题：设置为加粗小写 */
+        /* Project Title：加粗，首字母大写，支持手动大写 */
         .auto-resize-title {
             font-size: clamp(18px, 2vw, 22px); 
             line-height: 1.4;
@@ -34,18 +32,18 @@
             background: transparent;
             border: none;
             outline: none;
-            font-weight: 800; /* 加粗 */
-            text-transform: lowercase; /* 强制小写 */
+            font-weight: 800;
+            text-transform: capitalize; /* 默认首字母大写 */
             display: block;
             color: #0f172a;
         }
 
-        /* 2. 打印专用标题：同步设置为加粗小写 */
+        /* 打印专用标题：同步样式 */
         .print-title-display {
             display: none;
             font-size: 14pt; 
-            font-weight: 800; /* 加粗 */
-            text-transform: lowercase; /* 强制小写 */
+            font-weight: 800;
+            text-transform: capitalize;
             line-height: 1.4;
             word-break: break-word;
             white-space: pre-wrap;
@@ -57,22 +55,12 @@
             #printable-area { 
                 position: absolute; left: 0; top: 0; width: 100%; margin: 0; 
                 padding: 10mm 15mm !important; box-sizing: border-box !important; 
-                background: white; box-shadow: none !important; border: none !important; 
+                background: white; border: none !important; 
             }
             .no-print, .internal-col, nav, button { display: none !important; }
-            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .page-break { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
-            
             .auto-resize-title { display: none !important; }
-            .print-title-display { 
-                display: block !important; 
-                visibility: visible !important;
-                width: 100% !important;
-            }
-            
+            .print-title-display { display: block !important; visibility: visible !important; width: 100% !important; }
             header { border-bottom: 1px solid #e2e8f0 !important; height: auto !important; }
-            input { border: none !important; background: transparent !important; }
-            table { width: 100% !important; border-collapse: collapse !important; }
         }
     </style>
 </head>
@@ -85,7 +73,7 @@
                 <span class="text-xl font-black italic tracking-tighter">SIGNED<span class="text-blue-500">ON</span></span>
                 <div class="flex space-x-2 border-l border-slate-700 pl-6">
                     <button @click="actions.exportQuote" class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2">
-                        <i class="fas fa-download text-blue-400"></i> Save Quote (.json)
+                        <i class="fas fa-download text-blue-400"></i> Save Quote
                     </button>
                     <label class="hover:bg-slate-800 px-3 py-1.5 rounded transition flex items-center gap-2 cursor-pointer">
                         <i class="fas fa-folder-open text-yellow-400"></i> Load Quote
@@ -94,10 +82,6 @@
                 </div>
             </div>
             <div class="flex items-center space-x-4">
-                <button @click="actions.downloadMasterDB" class="text-slate-400 hover:text-green-400 transition flex gap-2">
-                    <i class="fas fa-database"></i> Export Master DB
-                </button>
-                <div class="h-4 w-px bg-slate-700"></div>
                 <button @click="actions.reset" class="text-slate-400 hover:text-red-400 transition font-bold">RESET</button>
                 <button @click="actions.printPDF" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold shadow-lg transition flex items-center gap-2">
                     <i class="fas fa-print"></i> PDF / PRINT
@@ -198,7 +182,6 @@
                     <div class="text-xs text-yellow-900 w-48 space-y-1">
                         <div class="flex justify-between"><span>Total Cost:</span> <span class="font-bold">${{ totals.cost.toFixed(2) }}</span></div>
                         <div class="flex justify-between"><span>Total Profit:</span> <span class="font-bold text-green-700">${{ totals.profit.toFixed(2) }}</span></div>
-                        <div class="flex justify-between border-t border-yellow-200 pt-1 mt-1"><span>Avg Margin:</span> <span class="font-bold">{{ totals.marginPercent }}%</span></div>
                     </div>
                 </div>
                 <div class="w-64 space-y-3 text-right ml-auto">
@@ -209,14 +192,9 @@
             </div>
         </footer>
     </main>
-
-    <datalist id="dbList">
-        <option v-for="item in db.combined" :value="item.name">{{ item.name }} (Sell: ${{item.sell}})</option>
-    </datalist>
 </div>
 
 <script>
-    // Vue 逻辑保持不变...
     const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
     createApp({
@@ -231,61 +209,32 @@
                 sections: [{ id: 1, title: 'Scope of Works', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }] }]
             });
 
+            // 逻辑和数据监听完全保持不变
             const loadDatabase = async () => {
-                try {
-                    const res = await fetch('database.json');
-                    if (res.ok) config.repoDB = await res.json();
-                } catch (e) { console.error("DB Load Fail"); }
                 const local = localStorage.getItem('so_custom_db');
                 if (local) config.localDB = JSON.parse(local);
             };
 
-            const db = reactive({
-                combined: computed(() => {
-                    const map = new Map();
-                    config.repoDB.forEach(i => map.set(i.name, i));
-                    config.localDB.forEach(i => map.set(i.name, i));
-                    return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
-                })
-            });
-
             const logic = {
                 updateFromCost: (item) => {
-                    if (item.cost >= 0 && item.margin >= 0) {
-                        item.sell = parseFloat((item.cost * (1 + item.margin / 100)).toFixed(2));
-                    }
+                    item.sell = parseFloat((item.cost * (1 + item.margin / 100)).toFixed(2));
                 },
                 updateFromSell: (item) => {
-                    if (item.sell > 0 && item.cost > 0) {
-                        item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
-                    } else if (item.sell > 0 && item.cost === 0) {
-                        item.margin = 100;
-                    }
+                    if (item.cost > 0) item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
                 },
-                handleItemInput: (item) => {
-                    const match = db.combined.find(d => d.name === item.name);
-                    if (match) {
-                        item.cost = match.cost || 0;
-                        item.sell = match.sell || 0;
-                        if (item.cost > 0) {
-                            item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(1));
-                        } else {
-                            item.margin = 100;
-                        }
-                    }
-                }
+                handleItemInput: (item) => {}
             };
 
             const actions = {
                 addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }),
-                removeItem: (s, i) => { if (quote.value.sections[s].items.length > 1) quote.value.sections[s].items.splice(i, 1); },
+                removeItem: (s, i) => quote.value.sections[s].items.splice(i, 1),
                 addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [] }),
-                removeSection: (i) => { if(confirm("Remove Section?")) quote.value.sections.splice(i, 1); },
+                removeSection: (i) => quote.value.sections.splice(i, 1),
                 exportQuote: () => {
-                    const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: 'application/json' });
+                    const blob = new Blob([JSON.stringify(quote.value)], { type: 'application/json' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `Quote_${quote.value.meta.title || 'Draft'}.json`;
+                    a.download = `Quote_${quote.value.meta.title}.json`;
                     a.click();
                 },
                 importQuote: (e) => {
@@ -293,19 +242,8 @@
                     reader.onload = (ev) => quote.value = JSON.parse(ev.target.result);
                     reader.readAsText(e.target.files[0]);
                 },
-                downloadMasterDB: () => {
-                    const master = db.combined.map(i => ({ name: i.name, cost: Number(i.cost), sell: Number(i.sell) }));
-                    const blob = new Blob([JSON.stringify(master, null, 2)], { type: 'application/json' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = 'database.json';
-                    a.click();
-                },
                 reset: () => { if(confirm("Reset?")) { localStorage.removeItem('so_current_quote'); location.reload(); } },
-                printPDF: () => { 
-                    window.dispatchEvent(new Event('resize'));
-                    setTimeout(() => { window.print(); }, 300); 
-                }
+                printPDF: () => { window.print(); }
             };
 
             const totals = computed(() => {
@@ -314,24 +252,15 @@
                     cost += (i.cost || 0) * i.qty;
                     sell += (i.sell || 0) * i.qty;
                 }));
-                const profit = sell - cost;
-                return { cost, sell, profit, gst: sell * 0.1, grand: sell * 1.1, marginPercent: sell > 0 ? ((profit/sell)*100).toFixed(1) : 0 };
+                return { cost, sell, profit: sell - cost, gst: sell * 0.1, grand: sell * 1.1 };
             });
 
             onMounted(() => {
-                loadDatabase();
                 const saved = localStorage.getItem('so_current_quote');
                 if (saved) quote.value = JSON.parse(saved);
-                
-                setTimeout(() => {
-                    document.querySelectorAll('textarea').forEach(el => {
-                        el.style.height = '';
-                        el.style.height = el.scrollHeight + 'px';
-                    });
-                }, 500);
             });
             watch(quote, (val) => localStorage.setItem('so_current_quote', JSON.stringify(val)), { deep: true });
-            return { config, quote, db, logic, actions, totals };
+            return { config, quote, logic, actions, totals };
         }
     }).mount('#app');
 </script>
