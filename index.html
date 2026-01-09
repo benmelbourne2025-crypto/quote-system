@@ -3,113 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignedOn | Quote System Pro</title>
+    <title>SignedOn | Complete Quote System</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --brand-dark: #0f172a; --brand-blue: #2563eb; }
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        [v-cloak] { display: none !important; }
-        .input-ghost:focus { background: white; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); outline: none; }
+        [v-cloak] { display: none; }
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
         @media print {
-            .no-print, .internal-col { display: none !important; }
-            #printable-area { width: 100%; margin: 0; padding: 10mm !important; }
+            .no-print { display: none !important; }
+            #printable-area { box-shadow: none; margin: 0; width: 100%; max-width: none; }
+            body { background: white; }
         }
+        .input-underline { border-bottom: 1px solid transparent; transition: all 0.2s; }
+        .input-underline:focus { border-bottom-color: #3b82f6; outline: none; background: #f8fafc; }
     </style>
 </head>
-<body class="text-slate-800 pb-32">
+<body>
 
 <div id="app" v-cloak>
-    <nav class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg no-print">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center text-xs font-bold uppercase tracking-tighter">
-            <div class="flex items-center space-x-6">
-                <span class="text-xl italic">SIGNED<span class="text-blue-500">ON</span></span>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button @click="actions.printPDF" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded shadow-lg transition flex items-center gap-2">
-                    <i class="fas fa-print"></i> PDF / Print
+    <nav class="bg-slate-900 text-white p-3 sticky top-0 z-50 no-print shadow-2xl">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="text-xl font-black italic tracking-tighter mr-4">SIGNED<span class="text-blue-500">ON</span></div>
+                <button @click="fileSystem.saveData" class="text-[10px] font-bold bg-slate-800 hover:bg-blue-600 px-3 py-2 rounded transition flex items-center gap-2">
+                    <i class="fas fa-save"></i> SAVE JSON
+                </button>
+                <label class="text-[10px] font-bold bg-slate-800 hover:bg-yellow-600 px-3 py-2 rounded transition flex items-center gap-2 cursor-pointer">
+                    <i class="fas fa-folder-open"></i> OPEN
+                    <input type="file" class="hidden" @change="fileSystem.loadData" accept=".json">
+                </label>
+                <button @click="fileSystem.resetData" class="text-[10px] font-bold bg-slate-800 hover:bg-red-600 px-3 py-2 rounded transition flex items-center gap-2">
+                    <i class="fas fa-trash-alt"></i> RESET
                 </button>
             </div>
+            
+            <button @click="actions.printPDF" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded shadow-lg font-bold text-sm transition flex items-center gap-2">
+                <i class="fas fa-file-pdf"></i> PRINT PDF
+            </button>
         </div>
     </nav>
 
-    <main id="printable-area" class="max-w-6xl mx-auto mt-10 bg-white min-h-[1000px] shadow-2xl rounded-xl p-12">
-        <header class="border-b border-slate-100 flex justify-between items-start pb-8 mb-10">
-            <div class="w-2/3">
-                <input v-model="quote.meta.title" class="text-2xl font-black w-full outline-none" placeholder="PROJECT TITLE">
-                <input v-model="quote.meta.client" class="w-full text-slate-500 font-bold outline-none mt-2" placeholder="CLIENT NAME">
+    <main id="printable-area" class="max-w-6xl mx-auto my-10 bg-white shadow-2xl min-h-screen p-12">
+        <header class="flex justify-between items-start mb-12 border-b-2 border-slate-900 pb-8">
+            <div class="w-1/2 space-y-2">
+                <input v-model="quote.title" class="text-3xl font-black w-full outline-none uppercase" placeholder="Project Title">
+                <div class="flex flex-col gap-1 text-slate-600">
+                    <input v-model="quote.client" class="font-bold text-lg outline-none" placeholder="Client Name">
+                    <input v-model="quote.address" class="text-sm outline-none" placeholder="Site Address">
+                </div>
             </div>
-            <div class="text-right">
-                <div class="text-xs text-slate-400 font-bold uppercase">Date</div>
-                <div class="font-black text-slate-800">{{ config.currentDate }}</div>
+            <div class="text-right space-y-1">
+                <div class="text-xs font-black text-slate-400 uppercase tracking-widest">Quote Details</div>
+                <div class="text-sm font-bold">Date: {{ config.currentDate }}</div>
+                <input v-model="quote.jobNo" class="text-sm font-bold text-right outline-none block w-full" placeholder="Job No: #0000">
             </div>
         </header>
 
-        <div class="space-y-12">
-            <div v-for="(section, sIdx) in quote.sections" :key="section.id">
-                <div class="flex items-center gap-4 mb-4 border-b-2 border-slate-900 pb-2">
-                    <input v-model="section.title" class="text-lg font-black text-slate-800 outline-none w-full uppercase" placeholder="SECTION TITLE">
-                </div>
-
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b border-slate-100">
-                            <th class="pb-3 w-[40%]">Description</th>
-                            <th class="pb-3 text-right internal-col bg-yellow-50 text-yellow-600 px-2">Cost</th>
-                            <th class="pb-3 text-right internal-col bg-yellow-50 text-yellow-600 px-2">Margin%</th>
-                            <th class="pb-3 text-center w-[10%]">Qty</th>
-                            <th class="pb-3 text-right w-[15%]">Unit Price</th>
-                            <th class="pb-3 text-right w-[15%]">Total</th>
-                            <th class="pb-3 w-8 no-print"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        <tr v-for="(item, iIdx) in section.items" :key="iIdx" class="group hover:bg-slate-50 transition">
-                            <td class="py-4">
-                                <input v-model="item.name" list="dbItems" @input="logic.handleSearch(item)" class="w-full font-bold text-slate-700 outline-none bg-transparent" placeholder="Select Item...">
-                                <textarea v-model="item.desc" class="w-full text-xs text-slate-400 outline-none bg-transparent mt-1" placeholder="Details..."></textarea>
-                            </td>
-                            <td class="py-4 internal-col bg-yellow-50/30">
-                                <input type="number" v-model.number="item.cost" @input="logic.updateByCost(item)" class="w-full text-right font-medium outline-none bg-transparent px-2">
-                            </td>
-                            <td class="py-4 internal-col bg-yellow-50/30">
-                                <input type="number" v-model.number="item.margin" @input="logic.updateByMargin(item)" class="w-full text-right font-medium text-green-600 outline-none bg-transparent px-2">
-                            </td>
-                            <td class="py-4">
-                                <input type="number" v-model.number="item.qty" class="w-full text-center font-bold outline-none bg-transparent">
-                            </td>
-                            <td class="py-4 text-right">
-                                <input type="number" v-model.number="item.sell" @input="logic.updateBySell(item)" step="0.01" class="w-full text-right font-black text-slate-700 outline-none bg-transparent">
-                            </td>
-                            <td class="py-4 text-right font-black text-slate-900">
-                                ${{ (item.qty * (item.sell || 0)).toFixed(2) }}
-                            </td>
-                            <td class="py-4 text-center no-print">
-                                <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-times"></i></button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button @click="actions.addItem(sIdx)" class="mt-4 text-[10px] font-black text-blue-500 uppercase no-print">+ Add Item</button>
+        <div v-for="(section, sIdx) in quote.sections" :key="section.id" class="mb-12 relative group">
+            <div class="flex items-center gap-4 mb-4 bg-slate-50 p-2">
+                <input v-model="section.title" class="bg-transparent font-black text-slate-800 uppercase outline-none flex-1" placeholder="SECTION NAME">
+                <button @click="actions.removeSection(sIdx)" class="no-print text-red-300 hover:text-red-500 text-xs">Delete Section</button>
             </div>
+
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-slate-200 text-[10px] uppercase font-black text-slate-400">
+                        <th class="py-3 text-left w-[35%]">Description</th>
+                        <th class="py-3 text-right bg-yellow-50/50 internal-col">Cost</th>
+                        <th class="py-3 text-right bg-yellow-50/50 internal-col">Margin%</th>
+                        <th class="py-3 text-center w-16">Qty</th>
+                        <th class="py-3 text-right">Unit Sell</th>
+                        <th class="py-3 text-right w-28">Total</th>
+                        <th class="py-3 w-8 no-print"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr v-for="(item, iIdx) in section.items" :key="iIdx" class="group/row">
+                        <td class="py-4">
+                            <input v-model="item.name" list="dbItems" @input="logic.handleSearch(item)" class="w-full font-bold outline-none mb-1" placeholder="Search product...">
+                            <textarea v-model="item.desc" rows="1" class="w-full text-xs text-slate-400 outline-none italic resize-none" placeholder="Extra details..."></textarea>
+                        </td>
+                        <td class="py-4 internal-col bg-yellow-50/30 px-1">
+                            <input type="number" v-model.number="item.cost" @input="logic.updateByCost(item)" class="w-full text-right bg-transparent outline-none">
+                        </td>
+                        <td class="py-4 internal-col bg-yellow-50/30 px-1">
+                            <input type="number" v-model.number="item.margin" @input="logic.updateByMargin(item)" class="w-full text-right bg-transparent outline-none text-blue-600 font-bold">
+                        </td>
+                        <td class="py-4">
+                            <input type="number" v-model.number="item.qty" class="w-full text-center font-bold outline-none">
+                        </td>
+                        <td class="py-4">
+                            <input type="number" v-model.number="item.sell" @input="logic.updateBySell(item)" step="0.01" class="w-full text-right font-bold text-slate-800 outline-none">
+                        </td>
+                        <td class="py-4 text-right font-black">
+                            ${{ (item.qty * item.sell).toFixed(2) }}
+                        </td>
+                        <td class="py-4 text-center no-print">
+                            <button @click="actions.removeItem(sIdx, iIdx)" class="text-slate-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button @click="actions.addItem(sIdx)" class="no-print mt-4 text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase">+ Add Line Item</button>
         </div>
 
-        <footer class="border-t border-slate-200 pt-10 mt-10 flex justify-between items-end">
-            <div class="internal-col bg-yellow-100/50 rounded-lg p-6 border border-yellow-200">
-                <div class="text-[10px] font-black text-yellow-700 uppercase mb-4 tracking-widest">Internal Margin Analysis</div>
-                <div class="space-y-2 text-xs">
-                    <div class="flex justify-between w-48 italic text-yellow-800"><span>Total Project Cost:</span> <span>${{ totals.cost.toFixed(2) }}</span></div>
-                    <div class="flex justify-between w-48 font-black text-green-700 border-t border-yellow-200 pt-2"><span>Estimated Profit:</span> <span>${{ totals.profit.toFixed(2) }}</span></div>
-                    <div class="flex justify-between w-48 font-black text-yellow-900"><span>Overall Margin:</span> <span>{{ totals.marginPercent }}%</span></div>
+        <button @click="actions.addSection" class="no-print w-full border-2 border-dashed border-slate-200 py-4 rounded-xl text-slate-400 font-bold hover:bg-slate-50 transition mb-20">
+            + ADD NEW SECTION
+        </button>
+
+        <footer class="flex justify-between items-end border-t-4 border-slate-100 pt-10">
+            <div class="internal-col bg-slate-50 p-6 rounded border border-slate-200">
+                <div class="text-[10px] font-black text-slate-400 uppercase mb-4">Internal Summary</div>
+                <div class="space-y-1 text-sm font-mono">
+                    <div class="flex justify-between gap-12"><span>Total Cost:</span> <span>${{ totals.cost.toFixed(2) }}</span></div>
+                    <div class="flex justify-between gap-12 text-green-600 font-bold border-t pt-2"><span>Total Profit:</span> <span>${{ totals.profit.toFixed(2) }}</span></div>
+                    <div class="flex justify-between gap-12 text-blue-600"><span>Project Margin:</span> <span>{{ totals.marginPercent }}%</span></div>
                 </div>
             </div>
-            <div class="w-80 space-y-3">
-                <div class="flex justify-between text-xs font-bold text-slate-400 uppercase"><span>Subtotal (Excl. GST)</span> <span class="text-slate-900 font-black">${{ totals.sell.toFixed(2) }}</span></div>
-                <div class="flex justify-between text-xs font-bold text-slate-400 uppercase"><span>GST (10%)</span> <span class="text-slate-900 font-black">${{ totals.gst.toFixed(2) }}</span></div>
-                <div class="flex justify-between items-center pt-4 border-t-2 border-slate-900">
-                    <span class="text-sm font-black uppercase">Grand Total</span>
+
+            <div class="w-80 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-slate-500 uppercase"><span>Subtotal (Excl. GST)</span> <span>${{ totals.sell.toFixed(2) }}</span></div>
+                <div class="flex justify-between text-xs font-bold text-slate-500 uppercase"><span>GST (10%)</span> <span>${{ totals.gst.toFixed(2) }}</span></div>
+                <div class="flex justify-between items-center pt-4 border-t-2 border-slate-900 mt-4">
+                    <span class="text-lg font-black uppercase">Grand Total</span>
                     <span class="text-3xl font-black text-blue-600">${{ totals.grand.toFixed(2) }}</span>
                 </div>
             </div>
@@ -117,96 +134,108 @@
     </main>
 
     <datalist id="dbItems">
-        <option v-for="dbItem in config.masterDB" :key="dbItem.name" :value="dbItem.name">
-            Sell: ${{ dbItem.sell.toFixed(2) }} (Cost: ${{ dbItem.cost.toFixed(2) }})
+        <option v-for="dbItem in masterDB" :key="dbItem.name" :value="dbItem.name">
+            Sell: ${{ dbItem.sell }} | Cost: ${{ dbItem.cost }}
         </option>
     </datalist>
 </div>
 
 <script>
-const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+const { createApp, ref, reactive, computed } = Vue;
 
 createApp({
     setup() {
-        const config = reactive({
-            currentDate: new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
-            // 这里放入你提供的大型数据库
-            masterDB: [
-                { "name": "16 Gauge Speaker Cable - 100m", "cost": 450.00, "sell": 585.00 },
-                { "name": "16 Gauge Speaker Cable White  - 100m", "cost": 395.00, "sell": 450.00 },
-                { "name": "ACM - Nubond 2440mm x 1220mm x 3mm 0.21 Gl Blk Mt Blk", "cost": 63.86, "sell": 76.63 },
-                { "name": "Acrylic Clear 2440mm x 1220mm x 3.0mm PE Mask", "cost": 67.41, "sell": 95.00 },
-                { "name": "Signwriter", "cost": 0, "sell": 110.00 },
-                { "name": "Installer (Senior) x1", "cost": 0, "sell": 105.00 },
-                { "name": "Zambrero 3D 1000x6152 Cranbourne North", "cost": 0, "sell": 4850.00 }
-                /* ... 剩余数据可以全部粘贴在这里 ... */
-            ]
-        });
+        const config = { currentDate: new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) };
 
-        // 将你提供的完整 JSON 数据合并入 masterDB (此处简化，运行代码时请完整粘贴)
-        // config.masterDB = [...]; 
+        // 示例数据，你可以根据需要在这里继续补充
+        const masterDB = ref([
+            { "name": "16 Gauge Speaker Cable - 100m", "cost": 450.00, "sell": 585.00 },
+            { "name": "Acrylic Clear 3.0mm PE Mask", "cost": 67.41, "sell": 95.00 },
+            { "name": "Installer (Senior) x1", "cost": 0, "sell": 105.00 }
+        ]);
 
         const quote = ref({
-            meta: { title: '', client: '' },
-            sections: [{ id: 1, title: 'Main Scope', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }] }]
+            title: 'NEW QUOTATION',
+            client: '',
+            address: '',
+            jobNo: '',
+            sections: [{ id: Date.now(), title: 'Phase 1: Installation', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 0, sell: 0 }] }]
         });
 
         const logic = {
-            // 搜索联动：当选择数据库项目时，同步 Cost 和 Sell
             handleSearch: (item) => {
-                const match = config.masterDB.find(d => d.name === item.name);
+                const match = masterDB.value.find(d => d.name === item.name);
                 if (match) {
                     item.cost = match.cost;
                     item.sell = match.sell;
-                    this.updateBySell(item); // 自动算出初始 Margin
+                    logic.updateBySell(item); // 基于 Sell 反算出 Margin
                 }
             },
-            // 修改 Cost：保持 Margin，更新 Sell
             updateByCost: (item) => {
-                const cost = parseFloat(item.cost) || 0;
-                const margin = parseFloat(item.margin) || 0;
-                item.sell = (cost * (1 + margin / 100)).toFixed(2);
+                // Cost 变，Sell 变 (基于现有 Margin)
+                item.sell = parseFloat((item.cost * (1 + (item.margin || 0) / 100)).toFixed(2));
             },
-            // 修改 Margin：基于 Cost，更新 Sell
             updateByMargin: (item) => {
-                const cost = parseFloat(item.cost) || 0;
-                const margin = parseFloat(item.margin) || 0;
-                item.sell = (cost * (1 + margin / 100)).toFixed(2);
+                // Margin 变，Sell 变 (基于现有 Cost)
+                item.sell = parseFloat((item.cost * (1 + (item.margin || 0) / 100)).toFixed(2));
             },
-            // 修改 Sell (Unit Price)：反推 Margin
             updateBySell: (item) => {
-                const sell = parseFloat(item.sell) || 0;
-                const cost = parseFloat(item.cost) || 0;
-                if (cost > 0) {
-                    item.margin = (((sell - cost) / cost) * 100).toFixed(1);
+                // Sell 变，Margin 变 (基于现有 Cost)
+                if (item.cost > 0) {
+                    item.margin = parseFloat((((item.sell - item.cost) / item.cost) * 100).toFixed(2));
                 } else {
-                    item.margin = 0; // Cost 为 0 时无法计算利润率
+                    item.margin = 0;
                 }
             }
         };
 
         const actions = {
-            addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 30, sell: 0 }),
-            removeItem: (s, i) => quote.value.sections[s].items.splice(i, 1),
+            addSection: () => quote.value.sections.push({ id: Date.now(), title: 'New Section', items: [{ name: '', desc: '', qty: 1, cost: 0, margin: 0, sell: 0 }] }),
+            removeSection: (sIdx) => { if(confirm('Delete entire section?')) quote.value.sections.splice(sIdx, 1); },
+            addItem: (sIdx) => quote.value.sections[sIdx].items.push({ name: '', desc: '', qty: 1, cost: 0, margin: 0, sell: 0 }),
+            removeItem: (sIdx, iIdx) => quote.value.sections[sIdx].items.splice(iIdx, 1),
             printPDF: () => window.print()
         };
 
+        const fileSystem = {
+            saveData: () => {
+                const blob = new Blob([JSON.stringify(quote.value, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${quote.value.client || 'Quote'}_${new Date().getTime()}.json`;
+                a.click();
+            },
+            loadData: (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        quote.value = JSON.parse(e.target.result);
+                    } catch (err) { alert("Format Error"); }
+                };
+                reader.readAsText(file);
+            },
+            resetData: () => {
+                if (confirm("Reset everything?")) location.reload();
+            }
+        };
+
         const totals = computed(() => {
-            let cost = 0, sell = 0;
+            let tc = 0, ts = 0;
             quote.value.sections.forEach(s => s.items.forEach(i => {
-                cost += (parseFloat(i.cost) || 0) * i.qty;
-                sell += (parseFloat(i.sell) || 0) * i.qty;
+                tc += (i.cost * i.qty);
+                ts += (i.sell * i.qty);
             }));
             return {
-                cost, sell, 
-                profit: sell - cost,
-                gst: sell * 0.1,
-                grand: sell * 1.1,
-                marginPercent: sell > 0 ? (((sell - cost) / sell) * 100).toFixed(1) : 0
+                cost: tc, sell: ts, profit: ts - tc,
+                gst: ts * 0.1, grand: ts * 1.1,
+                marginPercent: tc > 0 ? (((ts - tc) / tc) * 100).toFixed(1) : 0
             };
         });
 
-        return { config, quote, logic, actions, totals };
+        return { config, masterDB, quote, logic, actions, fileSystem, totals };
     }
 }).mount('#app');
 </script>
